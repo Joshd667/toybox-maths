@@ -59,62 +59,71 @@ for (const a of ACTIVITIES) {
       }
       generated++;
       if (!Array.isArray(inst.setup) || !inst.setup.length || inst.setup.some(badText)) err(where, 'setup must be a list of sentences');
-      if (badText(inst.ask)) err(where, `bad "ask": ${inst.ask}`);
+      if (inst.setup && inst.setup.length > 3) err(where, 'keep setup to 3 short lines; the adult is in a hurry');
       if (!Array.isArray(inst.look) || !inst.look.length || inst.look.some(badText)) err(where, '"look" must be a list of sentences');
       if (badText(inst.easier) || badText(inst.harder)) err(where, 'needs "easier" and "harder"');
       if (!Array.isArray(inst.words) || !inst.words.length) err(where, 'needs "words" to use');
       if (!Array.isArray(inst.scenes)) err(where, 'scenes must be a list (can be empty)');
-      let keys = [];
-      for (const sc of inst.scenes || []) {
-        if (!isSprite(sc.sprite)) {
-          err(where, 'a scene has no valid picture');
-          continue;
-        }
-        if (sc.caption !== undefined && badText(sc.caption)) err(where, 'bad scene caption');
-        const svg = render(sc.sprite);
-        if (/NaN|undefined|Infinity/.test(svg)) err(where, 'picture contains NaN/undefined');
-        keys = keys.concat(hitKeys(svg));
-        if (sc.sprite.w > widest.w) Object.assign(widest, { w: sc.sprite.w, where });
-        if (sc.sprite.w > 700) err(where, `picture is ${Math.round(sc.sprite.w)} wide; keep under 700 or it gets tiny on a phone`);
-      }
-      if (inst.reveal) {
-        if (badText(inst.reveal.caption)) err(where, 'bad reveal caption');
-        if (inst.reveal.sprite) {
-          if (!isSprite(inst.reveal.sprite)) err(where, 'reveal picture invalid');
-          else if (/NaN|undefined|Infinity/.test(render(inst.reveal.sprite))) err(where, 'reveal picture contains NaN/undefined');
-        }
-      }
-      const ans = inst.answer;
-      if (!ans || !ANSWER_TYPES.includes(ans.type)) {
-        err(where, 'bad answer type');
-        continue;
-      }
-      if (ans.type === 'number') {
-        if (!Number.isInteger(ans.value) || ans.value < 0 || ans.value > 20) err(where, `number answer ${ans.value} out of range`);
-        if (!Array.isArray(ans.choices) || ans.choices.length < 2) err(where, 'number answer needs choices');
-        else {
-          if (!ans.choices.includes(ans.value)) err(where, `choices ${ans.choices} do not include the answer ${ans.value}`);
-          if (new Set(ans.choices).size !== ans.choices.length) err(where, 'duplicate choices');
-          if (ans.choices.some((c) => !Number.isInteger(c) || c < 0 || c > 20)) err(where, 'choice out of range');
-        }
-      }
-      if (ans.type === 'pick') {
-        const ks = (ans.options || []).map((o) => o.key);
-        if (ks.length < 2) err(where, 'pick needs at least two options');
-        if (new Set(ks).size !== ks.length) err(where, 'duplicate pick options');
-        if (!ks.includes(ans.correct)) err(where, `correct option "${ans.correct}" is not one of ${ks}`);
-        for (const o of ans.options || []) if (!o.label && !isSprite(o.sprite)) err(where, 'pick option needs a label or picture');
-      }
-      if (ans.type === 'tap') {
-        if (!Array.isArray(ans.correct) || !ans.correct.length) err(where, 'tap needs a correct list');
-        if (new Set(keys).size !== keys.length) err(where, `tappable keys are not unique: ${keys}`);
-        for (const c of ans.correct || []) if (!keys.includes(c)) err(where, `correct tap "${c}" is not on the picture (${keys})`);
-        if (keys.length < 2) err(where, 'tap needs at least two things to tap');
-        if (!ans.multi && ans.correct.length !== 1) err(where, 'single tap must have exactly one correct key');
-      } else if (keys.length) err(where, 'picture has tappable parts but the answer type is not "tap"');
-      if (ans.type === 'spinner' && (!Array.isArray(ans.values) || !ans.values.length)) err(where, 'spinner needs values');
+      if (inst.more !== undefined && !Array.isArray(inst.more)) err(where, '"more" must be a list of follow-up questions');
+      // The first question is the activity itself; follow-ups are in "more". Each may bring its own pictures.
+      const questions = [inst, ...(inst.more || [])];
+      questions.forEach((q, qi) => {
+        const at = qi ? `${where} follow-up ${qi}` : where;
+        checkQuestion(q, q.scenes || inst.scenes || [], at);
+      });
     }
   }
+}
+
+function checkQuestion(q, scenes, where) {
+  if (badText(q.ask)) err(where, `bad "ask": ${q.ask}`);
+  if (q.note !== undefined && badText(q.note)) err(where, 'bad note');
+  let keys = [];
+  for (const sc of scenes) {
+    if (!isSprite(sc.sprite)) {
+      err(where, 'a scene has no valid picture');
+      continue;
+    }
+    if (sc.caption !== undefined && badText(sc.caption)) err(where, 'bad scene caption');
+    const svg = render(sc.sprite);
+    if (/NaN|undefined|Infinity/.test(svg)) err(where, 'picture contains NaN/undefined');
+    keys = keys.concat(hitKeys(svg));
+    if (sc.sprite.w > widest.w) Object.assign(widest, { w: sc.sprite.w, where });
+    if (sc.sprite.w > 700) err(where, `picture is ${Math.round(sc.sprite.w)} wide; keep under 700 or it gets tiny on a phone`);
+  }
+  if (q.reveal) {
+    if (badText(q.reveal.caption)) err(where, 'bad reveal caption');
+    if (q.reveal.sprite) {
+      if (!isSprite(q.reveal.sprite)) err(where, 'reveal picture invalid');
+      else if (/NaN|undefined|Infinity/.test(render(q.reveal.sprite))) err(where, 'reveal picture contains NaN/undefined');
+    }
+  }
+  const ans = q.answer;
+  if (!ans || !ANSWER_TYPES.includes(ans.type)) return err(where, 'bad answer type');
+  if (ans.type === 'number') {
+    if (!Number.isInteger(ans.value) || ans.value < 0 || ans.value > 20) err(where, `number answer ${ans.value} out of range`);
+    if (!Array.isArray(ans.choices) || ans.choices.length < 2) err(where, 'number answer needs choices');
+    else {
+      if (!ans.choices.includes(ans.value)) err(where, `choices ${ans.choices} do not include the answer ${ans.value}`);
+      if (new Set(ans.choices).size !== ans.choices.length) err(where, 'duplicate choices');
+      if (ans.choices.some((c) => !Number.isInteger(c) || c < 0 || c > 20)) err(where, 'choice out of range');
+    }
+  }
+  if (ans.type === 'pick') {
+    const ks = (ans.options || []).map((o) => o.key);
+    if (ks.length < 2) err(where, 'pick needs at least two options');
+    if (new Set(ks).size !== ks.length) err(where, 'duplicate pick options');
+    if (!ks.includes(ans.correct)) err(where, `correct option "${ans.correct}" is not one of ${ks}`);
+    for (const o of ans.options || []) if (!o.label && !isSprite(o.sprite)) err(where, 'pick option needs a label or picture');
+  }
+  if (ans.type === 'tap') {
+    if (!Array.isArray(ans.correct) || !ans.correct.length) err(where, 'tap needs a correct list');
+    if (new Set(keys).size !== keys.length) err(where, `tappable keys are not unique: ${keys}`);
+    for (const c of ans.correct || []) if (!keys.includes(c)) err(where, `correct tap "${c}" is not on the picture (${keys})`);
+    if (keys.length < 2) err(where, 'tap needs at least two things to tap');
+    if (!ans.multi && ans.correct.length !== 1) err(where, 'single tap must have exactly one correct key');
+  }
+  if (ans.type === 'spinner' && (!Array.isArray(ans.values) || !ans.values.length)) err(where, 'spinner needs values');
 }
 
 // Every strand should have something at every step.

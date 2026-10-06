@@ -1,6 +1,6 @@
 # Toybox Maths: notes for whoever works on this next (human or AI)
 
-A phone web app (PWA) of early maths activities for one family: a parent and a child of about three.
+A phone web app (PWA) of early maths activities for one family: a parent and young children, the eldest about three.
 Plain HTML, CSS and JavaScript modules. **No framework, no build step, no dependencies.** Keep it that way.
 
 Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` publishes.
@@ -11,8 +11,9 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 |---|---|
 | `index.html` | The one page. Bottom tabs and an empty `<main>`. |
 | `css/app.css` | All styling. Colours and fonts are variables at the top. |
-| `js/app.js` | The screens (Today, All, Activity, Progress, Guide) and all tap handling. |
-| `js/store.js` | What is saved on the phone, and how the next activity is chosen. |
+| `js/app.js` | The screens and all tap handling. Routes are listed at the top of the file. |
+| `js/store.js` | Children's profiles and progress (saved on the phone), and how the next activity is chosen. |
+| `js/reward.js` | Stars, the jumping animal and the chime when he gets one right. |
 | `js/draw.js` | Every picture. Toy "sprites" plus layout helpers. Pure functions, no DOM. |
 | `js/rng.js` | Seeded random numbers, so every variation can be reproduced and tested. |
 | `js/research.js` | Every source cited, with what it found and what it does not show. |
@@ -33,7 +34,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
    - `levels`: leave out for steps 1, 2 and 3, or give e.g. `[2, 3]`.
    - `research`: ids from `js/research.js` (see the rules below). `why`: one plain sentence.
 3. Write `make(r, level, ctx)`. It returns one concrete variation:
-   - `setup`: list of sentences telling the adult what to lay out
+   - `setup`: at most 3 short lines telling the adult what to lay out (the validator enforces 3)
    - `scenes`: list of `{ sprite, caption?, flash? }` pictures (`flash: 2` shows it for 2 seconds). May be `[]`.
    - `ask`: the words to say to the child. Short. Spoken English.
    - `answer`: one of
@@ -44,6 +45,10 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
      - `{ type: 'open' }` when there is no single right answer
      - `{ type: 'spinner', values: [1, 2] }`
    - `reveal`: optional `{ caption, sprite? }` shown after answering
+   - `note`: optional line for the adult only, shown above the question ("Drop 3 bricks in, slowly")
+   - `more`: list of follow-up questions on the SAME set-up, each `{ ask, answer, reveal?, scenes?, note? }`.
+     Give every activity follow-ups where it sensibly can ("How many are red?", "One more comes. How many now?").
+     `numQ(r, ask, value, caption?)` builds a number follow-up in one line. A follow-up with its own `scenes` replaces the picture.
    - `look`: list of things for the adult to watch for
    - `easier`, `harder`: one sentence each
    - `words`: maths words to use out loud
@@ -79,15 +84,22 @@ Draw generic toys only: no branded characters or copies of a product's own artwo
 - The reader is a parent holding a toddler's attention with one hand. Short sentences. UK spelling.
 - `ask` is spoken to a child under three: concrete, one question.
 - The child is referred to as "he". There is no name anywhere in the app or repo, and it should stay that way (the site is public).
-- Feedback to the child is never negative. Wrong taps fade; nothing buzzes or scores.
+- The child is "he" in activity text. Buttons and screens the app draws itself stay neutral, because there can be several children.
+- Children's names are typed into the app and saved on that phone only. Never put a name in the code or the repo.
+- Feedback to the child is never negative. Wrong taps fade. Right answers earn a star, a burst and a jump from the child's animal (the owner asked for this).
 - The toys do the teaching. Do not turn activities into screen games; tapping is for answers only.
+- The adult is stressed and wants an activity in ten seconds. One thing per screen, big buttons, no scrolling to find the next step.
+- This is not a toy maker's app. No brick-shaped headers, studs, or brand colours in the interface. Toys appear only in the pictures.
 
 ## How progress works
 
-Each strand has a step (1 to 3), starting at 1. After an activity the adult taps Too easy / Just right / Too tricky / Not today.
+An activity runs as: set-up screen, then questions one per screen (the main one, then its `more` follow-ups, then a fresh set-up).
+Each right answer is a star; at three the main button becomes Finish. Then the adult says how it went.
+
+Progress is kept per child. Each strand has a step (1 to 3), starting at 1. After an activity the adult taps Too easy / Just right / Too tricky / Not today.
 Two "too easy" in a row in a strand moves it up; two "too tricky" moves it down (`rate()` in `store.js`).
 The picker (`weight()` in `store.js`) prefers activities never tried, then "just right" ones, and avoids repeats on the same day.
-Saved in `localStorage` under `toybox-maths-v1`. If the saved shape changes, bump the key or migrate.
+Saved in `localStorage` under `toybox-maths-v2`. If the saved shape changes, bump the key or migrate.
 
 ## Publishing
 

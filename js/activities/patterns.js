@@ -1,7 +1,7 @@
 // Patterns: copying, continuing, fixing and describing things that repeat.
 import {
-  A, lv, times, choices, pickToy, list, an, cap,
-  flow, row, column, rod, cube, duplo, hit, qbox, frame, text, scatter, ring,
+  A, lv, times, choices, pickToy, list, an, cap, numQ,
+  flow, row, column, rod, cube, duplo, hit, qbox, frame, text, scatter, ring, wagon, engine, onTrack, flip,
   FARM, BRICK_COLOURS, MORE_COLOURS,
 } from './kit.js';
 
@@ -55,6 +55,10 @@ export default [
         ask: 'What comes next?',
         answer: { type: 'pick', options: r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: m.el(i) })), correct: String(next) },
         reveal: { caption: `${cap(an(m.full(next)))}. The pattern goes ${say(m, unit)}, over and over.`, sprite: line(m, [...seq, next], { wrap: (s, i) => (i === len ? ring(s) : s) }) },
+        more: [...[1, 2].map((j) => {
+          const nx = unit[(len + j) % unit.length];
+          return { ask: 'And what comes after that?', answer: { type: 'pick', options: r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: m.el(i) })), correct: String(nx) }, reveal: { caption: `${cap(an(m.full(nx)))}.` } };
+        })],
         look: ['Does he say the pattern aloud to work it out? That is the strategy to encourage.'],
         easier: 'Use two colours taking turns, and show lots of repeats.',
         harder: 'Let him carry on for five or six more without help.',
@@ -206,6 +210,7 @@ export default [
         ask: 'How many will be in the next tower?',
         answer: { type: 'number', value: next, choices: choices(r, next, { min: 0 }) },
         reveal: { caption: `${next}. Each tower is ${step === 2 ? 'two' : 'one'} ${down ? 'fewer' : 'more'} than the one before.`, sprite: stair([...hs, next]) },
+        more: [numQ(r, 'And the tower after that?', next + (down ? -1 : step))],
         look: ['Can he say what is changing each time?', 'Walk a toy up the stairs, counting each step.'],
         easier: 'Start with 1, 2, 3 and build the 4 together.',
         harder: 'Build a staircase that goes down, or up in twos.',
@@ -290,6 +295,35 @@ export default [
         easier: 'Start the first two pieces for him.',
         harder: 'Ask for a pattern with three things, or one where a colour comes twice.',
         words: ['pattern', 'repeat', 'my turn', 'your turn'],
+      };
+    },
+  }),
+  A({
+    id: 'pattern-train',
+    title: 'Pattern train',
+    strand: 'patterns',
+    toys: ['brio'],
+    minutes: 4,
+    research: ['rittle2013', 'devmatters'],
+    why: 'A row of wagons is a ready-made line for a repeating pattern, and adding the next wagon is continuing it.',
+    make(r, level) {
+      const unit = r.pick(UNITS[level]);
+      const len = lv(level, 4, unit.length + r.int(2, 3), unit.length + r.int(2, 3));
+      const cols = r.sample(MORE_COLOURS, 3);
+      const seq = seqOf(unit, len + 3);
+      const w = (v) => wagon(cube(cols[v]), 'blue');
+      const empty = wagon(qbox(22, 22), 'blue');
+      const pic = (shown, open) => onTrack(row([flip(engine()), ...seq.slice(0, shown).map(w), ...(open ? [empty] : [])], { gap: 1 }));
+      const opts = () => r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: cube(cols[i]) }));
+      const question = (shown, ask) => ({ ask, scenes: [{ sprite: pic(shown, true) }], answer: { type: 'pick', options: opts(), correct: String(seq[shown]) }, reveal: { caption: `${cap(cols[seq[shown]])}. The pattern goes ${unit.map((v) => cols[v]).join(', ')}, over and over.`, sprite: pic(shown + 1, false) } });
+      return {
+        setup: [`Hook ${len + 1} wagons behind the engine.`, `Load cubes or bricks from the engine backwards: ${seq.slice(0, len).map((v) => cols[v]).join(', ')}. Leave the last wagon empty.`],
+        ...question(len, 'What colour goes on the empty wagon?'),
+        more: [question(len + 1, 'Hook on another wagon. What colour goes on that one?'), question(len + 2, 'And the next one?')],
+        look: ['Does he say the colours aloud along the train to work it out?'],
+        easier: 'Two colours taking turns.',
+        harder: 'Let him load a pattern train for you to finish.',
+        words: ['pattern', 'next', 'again', 'repeat'],
       };
     },
   }),

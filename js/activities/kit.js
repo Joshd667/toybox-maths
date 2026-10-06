@@ -2,7 +2,7 @@
 // It re-exports all the drawing functions and adds a few small helpers.
 
 export * from '../draw.js';
-import { car, animal, duplo, cube, block, frame, gap, ANIMALS, MORE_COLOURS, BRICK_COLOURS } from '../draw.js';
+import { car, animal, duplo, cube, block, wagon, frame, gap, ANIMALS, MORE_COLOURS, BRICK_COLOURS } from '../draw.js';
 
 // A(def) just returns def. It marks "this object is an activity" for readers.
 export const A = (def) => def;
@@ -26,13 +26,17 @@ export function choices(r, value, o = {}) {
   return [...set].sort((a, b) => a - b);
 }
 
+// A follow-up question with number buttons: numQ(r, 'How many now?', 5, 'optional caption').
+export const numQ = (r, ask, value, caption, o) => ({ ask, answer: { type: 'number', value, choices: choices(r, value, o) }, ...(caption ? { reveal: { caption } } : {}) });
+
 // Things you can count. make(r) gives a random one; make(r, x) a specific colour/kind.
 const KINDS = {
-  cars: { one: 'car', many: 'cars', vary: MORE_COLOURS, make: (r, c) => car(c || r.pick(MORE_COLOURS)) },
-  animals: { one: 'animal', many: 'animals', vary: ANIMALS, make: (r, k) => animal(k || r.pick(ANIMALS)) },
-  duplo: { one: 'Duplo brick', many: 'Duplo bricks', vary: BRICK_COLOURS, make: (r, c) => duplo(c || r.pick(BRICK_COLOURS)) },
-  cubes: { one: 'cube', many: 'cubes', vary: MORE_COLOURS, make: (r, c) => cube(c || r.pick(MORE_COLOURS)) },
-  wooden: { one: 'wooden block', many: 'wooden blocks', vary: MORE_COLOURS, make: (r, c) => block('cube', c || r.pick(MORE_COLOURS)) },
+  cars: { one: 'car', many: 'cars', vary: MORE_COLOURS, say: (v) => v, make: (r, c) => car(c || r.pick(MORE_COLOURS)) },
+  animals: { one: 'animal', many: 'animals', vary: ANIMALS, say: (v) => (v === 'sheep' ? 'sheep' : v + 's'), make: (r, k) => animal(k || r.pick(ANIMALS)) },
+  duplo: { one: 'Duplo brick', many: 'Duplo bricks', vary: BRICK_COLOURS, say: (v) => v, make: (r, c) => duplo(c || r.pick(BRICK_COLOURS)) },
+  cubes: { one: 'cube', many: 'cubes', vary: MORE_COLOURS, say: (v) => v, make: (r, c) => cube(c || r.pick(MORE_COLOURS)) },
+  wooden: { one: 'wooden block', many: 'wooden blocks', vary: MORE_COLOURS, say: (v) => v, make: (r, c) => block('cube', c || r.pick(MORE_COLOURS)) },
+  brio: { one: 'wagon', many: 'wagons', vary: ['blue', 'green', 'yellow', 'red'], say: (v) => v, make: (r, c) => wagon(null, c || r.pick(['blue', 'green', 'yellow', 'red'])) },
 };
 
 // Choose which toy to draw: one the family has out today if possible.

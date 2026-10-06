@@ -1,6 +1,6 @@
 // Numerals: recognising written numbers and linking them to amounts and to their order.
 import {
-  A, lv, plural, times, choices, pickToy, has,
+  A, lv, plural, times, choices, pickToy, has, numQ,
   flow, row, column, tag, card, numeral, tower, rod, numicon, hit, qbox, text, sp, at, shade, PAL, INK,
   BRICK_COLOURS, MORE_COLOURS,
 } from './kit.js';
@@ -37,12 +37,14 @@ export default [
       const [lo, hi] = lv(level, [1, 5], [0, 10], [0, 20]);
       while (pool.size < count) pool.add(r.int(lo, hi));
       const nums = r.shuffle([...pool]);
+      const find = (t) => ({ ask: `Can you find number ${t}?`, answer: { type: 'tap', correct: [String(t)] }, reveal: { caption: `This is ${t}.`, sprite: card(t, 90) } });
       return {
         setup: ['Hold the phone so he can reach it. Real number cards on the floor work just as well.'],
         scenes: [{ sprite: flow(nums.map((n) => hit(card(n, 76), String(n))), { gap: 10, maxW: 300 }) }],
         ask: `Can you find number ${target}?`,
         answer: { type: 'tap', correct: [String(target)] },
         reveal: { caption: `This is ${target}.`, sprite: card(target, 90) },
+        more: [...r.shuffle(nums.filter((x) => x !== target)).slice(0, 2).map(find)],
         look: ['Which numbers does he mix up? 6 and 9, and 2 and 5, are the usual ones.'],
         easier: 'Use only 1, 2 and 3.',
         harder: 'Ask him to find the number that is one more than the one you say.',
@@ -68,6 +70,7 @@ export default [
         ask: `What number is this? Can you put that many ${toy.many} next to it?`,
         answer: { type: 'do' },
         reveal: { caption: `${n}. Count them onto the card together.`, sprite: row([card(n, 60), flow(times(n, (i) => tag(toy.make(r), i + 1)), { maxW: 240 })], { gap: 12, align: 'middle' }) },
+        more: [numQ(r, 'Put one more next to it. How many are there now?', n + 1)],
         look: ['Does he read the number himself?', 'Does he stop at the right amount?'],
         easier: 'Say the number as you show it.',
         harder: 'Lay out three number cards and make all three sets.',
@@ -100,7 +103,12 @@ export default [
           words: ['shape', 'holes', 'number'],
         };
       }
+      const again = () => {
+        const m = r.pick(times(lv(level, 5, 8) , (i) => i + lv(level, 1, 3)).filter((x) => x !== n));
+        return { ask: 'And which number goes with this one?', scenes: [{ sprite: numicon(m, 22) }], answer: { type: 'number', value: m, choices: choices(r, m, { min: 1, max: 10 }) }, reveal: { caption: `${m} holes, so it is the ${m} shape.` } };
+      };
       return {
+        more: [again(), again()],
         setup: ['Hold up the Numicon shape.'],
         scenes: [{ sprite: numicon(n, 22) }],
         ask: 'Which number goes with this shape?',
@@ -162,6 +170,7 @@ export default [
         ask: `Which tower has ${target}?`,
         answer: { type: 'tap', correct: [String(target)] },
         reveal: { caption: `The tower with ${target}. Count to check.`, sprite: row(ts.map((t) => column([t.s, card(t.h, 36)], { gap: 5 })), { gap: 20, align: 'bottom' }) },
+        more: hs.filter((h) => h !== target).map((h) => ({ ask: `Which tower has ${h}?`, answer: { type: 'tap', correct: [String(h)] }, reveal: { caption: `The tower with ${h}.` } })),
         look: ['Does he count each tower, or go straight to it by size?'],
         easier: 'Make the towers very different: 1, 3 and 6.',
         harder: 'Hand him the three number cards and let him label every tower.',
@@ -191,6 +200,7 @@ export default [
         ask: 'One number is hiding. Which one?',
         answer: { type: 'number', value: missing, choices: choices(r, missing, { min: 0 }) },
         reveal: { caption: `${missing}. Say them all in order, pointing.`, sprite: row(nums.map((n) => card(n, h)), { gap: 5 }) },
+        more: [...(nums[len - 1] < 20 ? [numQ(r, `What number would come next, after ${nums[len - 1]}?`, nums[len - 1] + 1)] : []), numQ(r, 'Which of these numbers is the smallest?', nums[0])],
         look: ['Does he count from the start to find it? That is the right strategy.'],
         easier: 'Use 1 to 4 and hide the last card.',
         harder: 'Hide two cards.',
@@ -217,6 +227,7 @@ export default [
         ask: before ? `This is ${n}. What number comes just before ${n}?` : `This is ${n}. What number comes after ${n}?`,
         answer: { type: 'number', value, choices: choices(r, value, { min: 0 }) },
         reveal: { caption: `${value}. Count up to it together.`, sprite: row(times(3, (i) => card(Math.max(0, Math.min(n, value) - 1) + i, 54)), { gap: 5 }) },
+        more: [...(before ? [numQ(r, `And what comes just before ${value}?`, value - 1)] : value < 20 ? [numQ(r, `And what comes after ${value}?`, value + 1)] : [])],
         look: ['Does he need to count from 1 to get there? That is fine, and it will speed up.'],
         easier: 'Stay below 5.',
         harder: 'Ask for the number before.',
@@ -238,10 +249,9 @@ export default [
       const mover = has(ctx, 'cars') ? 'car' : has(ctx, 'brio') ? 'engine' : 'animal';
       return {
         setup: [
-          `Make a straight track of ${n} spaces, numbered 1 to ${n} from left to right. Number cards in a row work, or numbers on paper.`,
-          `Each choose a ${mover}. Start to the left of number 1.`,
-          'Take turns to spin, then move that many spaces.',
-          'The rule that matters: say the numbers on the spaces as you move. On 3 and spin a 2? Say "4, 5", not "1, 2".',
+          `Make a straight track of ${n} spaces, numbered 1 to ${n} from left to right. Number cards in a row work.`,
+          `Each choose a ${mover} and start to the left of number 1. Take turns to spin and move.`,
+          'Say the numbers you land on as you move. On 3 and spin a 2? Say "4, 5", not "1, 2".',
         ],
         scenes: [{ caption: 'Start on the left, finish on the right', sprite: track(n, r) }],
         ask: level === 3 ? 'Before you move: where do you think you will land?' : 'Your turn to spin. Say the numbers as you go.',
@@ -274,6 +284,7 @@ export default [
         ask: 'These numbers are all muddled. Can you put them in order?',
         answer: { type: 'do' },
         reveal: { caption: 'Smallest on the left. Read them along the row.', sprite: row(nums.map((n) => card(n, 58)), { gap: 6 }) },
+        more: [numQ(r, 'Which number is the biggest?', nums[len - 1]), numQ(r, 'Which number is the smallest?', nums[0])],
         look: ['Does he find the first number, then hunt for the next? Or place them by trial and error?'],
         easier: 'Use 1, 2 and 3.',
         harder: 'Start from a number other than 1, or put a matching tower under each card.',

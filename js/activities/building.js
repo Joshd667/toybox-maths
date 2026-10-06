@@ -1,6 +1,6 @@
 // Building: copying models, design challenges and fitting shapes together.
 import {
-  A, lv, times, list, has, plural, prop,
+  A, lv, times, list, has, plural, prop, numQ,
   row, column, model, build, block, car, animal, engine, frame, text, sign, qbox, trackPath, layer, sp, at, shade, PAL,
   BLOCK_SIZE, BLOCK_NAME, BRICK_COLOURS, MORE_COLOURS, FARM,
 } from './kit.js';
@@ -116,6 +116,7 @@ export default [
         scenes: [{ caption: 'Seen from the front', sprite: model(m) }],
         ask: 'Can you build one exactly like this?',
         answer: { type: 'do' },
+        more: [numQ(r, 'How many bricks did you use?', m.length), numQ(r, `How many of them are ${m[0].colour}?`, m.filter((b) => b.colour === m[0].colour).length)],
         look: ['Does he check back against the model as he goes?', 'Which goes wrong first: the colours, or where a brick sits? Position is the harder part.', 'Talk as he builds: "on top", "sticking out", "next to", "in the middle".'],
         easier: 'Two bricks, one straight on top of the other.',
         harder: 'Show the picture for ten seconds, hide it, and let him build from memory.',
@@ -139,6 +140,7 @@ export default [
         scenes: [{ caption: 'Seen from the front', sprite: build(blocks) }],
         ask: 'Can you build one like this?',
         answer: { type: 'do' },
+        more: [numQ(r, 'How many blocks did you use?', blocks.length)],
         look: ['Does he pick the right shape for each place?', 'When it falls, does he change something or try the same again? Ask "what could we change?"'],
         easier: 'Two blocks, one on top of the other.',
         harder: 'Ask him to build it again from the other side of the table, so it faces you.',

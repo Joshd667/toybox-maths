@@ -730,6 +730,14 @@ export function scatter(items, rng, o = {}) {
   return flow(items, { maxW: W });
 }
 
+// Mirror a sprite left-to-right (e.g. an engine facing the other way).
+export const flip = (s) => sp(s.w, s.h, `<g transform="translate(${s.w} 0) scale(-1 1)">${s.svg}</g>`);
+
+// A five-pointed star (rewards).
+export function star(size = 24, colour = '#F2B01E') {
+  return sp(size, size, `<path transform="scale(${size / 24})" d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z" fill="${colour}" stroke="${shade(colour, -0.25)}" stroke-width="1" stroke-linejoin="round"/>`);
+}
+
 // Draw a sprite bigger or smaller.
 export const scale = (s, k) => sp(R(s.w * k), R(s.h * k), `<g transform="scale(${k})">${s.svg}</g>`);
 
@@ -750,7 +758,7 @@ export function render(s, o = {}) {
   const max = Math.round(W * (o.zoom ?? 2.3));
   return (
     `<svg class="scene${o.bare ? ' bare' : ''}" viewBox="0 0 ${W} ${H}" style="max-width:${max}px" role="img" aria-label="${esc(o.label || 'diagram')}" font-family="system-ui,sans-serif">` +
-    (o.bare ? '' : `<rect class="mat" width="${W}" height="${H}" rx="14" fill="#EFE2C6"/>`) +
+    (o.bare ? '' : `<rect class="mat" width="${W}" height="${H}" rx="14" fill="#E9EEF4"/>`) +
     at(s, p, p) +
     `</svg>`
   );

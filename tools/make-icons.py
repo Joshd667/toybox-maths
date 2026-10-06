@@ -7,17 +7,14 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent / "icons"
 THREE = "M11 19C22 4 51 6 50 28 49 43 36 48 25 48 40 48 53 56 52 71 50 95 19 97 9 81"  # same "3" as js/draw.js
 
 def art(scale=1.0):
-    # A yellow toy brick with a 3 on it.
+    # A big white 3 with a gold star. Deliberately not a brick: this is not a toy maker's app.
     return f'''<g transform="translate(256 256) scale({scale}) translate(-256 -256)">
-  <rect x="140" y="112" width="96" height="80" rx="22" fill="#F5BE1B" stroke="#C9940A" stroke-width="8"/>
-  <rect x="276" y="112" width="96" height="80" rx="22" fill="#F5BE1B" stroke="#C9940A" stroke-width="8"/>
-  <rect x="96" y="164" width="320" height="252" rx="40" fill="#F5BE1B" stroke="#C9940A" stroke-width="8"/>
-  <rect x="124" y="188" width="264" height="18" rx="9" fill="#fff" opacity=".38"/>
-  <path transform="translate(193 196) scale(2.1)" d="{THREE}" fill="none" stroke="#1E2A4A" stroke-width="14.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path transform="translate(146 96) scale(3.2)" d="{THREE}" fill="none" stroke="#ffffff" stroke-width="15" stroke-linecap="round" stroke-linejoin="round"/>
+  <path transform="translate(318 66) scale(5.2)" d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z" fill="#F2B01E" stroke="#211D3D" stroke-width="1.6" stroke-linejoin="round"/>
 </g>'''
 
 def svg(maskable=False):
-    bg = '<rect width="512" height="512" fill="#1F6FD0"/>' if maskable else '<rect width="512" height="512" rx="112" fill="#1F6FD0"/>'
+    bg = '<rect width="512" height="512" fill="#5746E0"/>' if maskable else '<rect width="512" height="512" rx="112" fill="#5746E0"/>'
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">{bg}{art(0.8 if maskable else 1.0)}</svg>'
 
 ROOT.mkdir(exist_ok=True)

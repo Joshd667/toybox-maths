@@ -1,13 +1,13 @@
 // Adding and taking away: small numbers, real objects, and "how many now?".
 import {
-  A, lv, plural, times, choices, pickToy, has,
+  A, lv, plural, times, choices, pickToy, has, numQ,
   flow, row, column, tag, tower, rod, numicon, train, wagon, cube, engine, onTrack,
   arrow, cover, frame, text, sign, qbox, card,
   BRICK_COLOURS, MORE_COLOURS,
 } from './kit.js';
 
-const HIDE = ['cars', 'animals', 'duplo', 'cubes'];
-const hideout = (id) => ({ cars: ['garage', 'drive', 'into'], animals: ['barn', 'walk', 'into'], duplo: ['tin', 'drop', 'into'], cubes: ['tin', 'drop', 'into'] }[id]);
+const HIDE = ['cars', 'animals', 'duplo', 'cubes', 'brio'];
+const hideout = (id) => ({ cars: ['garage', 'drive', 'into'], animals: ['barn', 'walk', 'into'], duplo: ['tin', 'drop', 'into'], cubes: ['tin', 'drop', 'into'], brio: ['tunnel', 'roll', 'into'] }[id]);
 
 export default [
   A({
@@ -35,6 +35,7 @@ export default [
         ask: `How many ${toy.many} are in the ${place} now?`,
         answer: { type: 'number', value: total, choices: choices(r, total, { min: 1 }) },
         reveal: { caption: `${a} and ${b} more makes ${total}. Lift the box and count.`, sprite: flow(items.map((s, i) => tag(s, i + 1))) },
+        more: [numQ(r, `One more goes in. How many now?`, total + 1), numQ(r, 'Two come out. How many are left inside?', total - 1)],
         look: ['Does he use fingers, or stare into space and work it out? Both are real thinking.', 'If he says the first number again, repeat the story slowly and let him try once more.'],
         easier: 'Use 1 and 1, or 2 and 1.',
         harder: 'Add two more instead of one, or do it under a tea towel with no box.',
@@ -68,6 +69,7 @@ export default [
         ask: `How many are still in the ${place}?`,
         answer: { type: 'number', value: left, choices: choices(r, left, { min: 0 }) },
         reveal: { caption: `${n} take away ${k} leaves ${left}. Lift the cover and count.`, sprite: left ? flow(items.slice(0, left).map((s, i) => tag(s, i + 1))) : undefined },
+        more: [numQ(r, 'One goes back in. How many are hiding now?', left + 1)],
         look: ['Does he count back, or hold up fingers and fold some down?'],
         easier: 'Start with 2 or 3 and take 1.',
         harder: 'Take two or three out at once.',
@@ -97,6 +99,10 @@ export default [
         ask: `There were ${n}. You can see ${seen}. How many am I hiding?`,
         answer: { type: 'number', value: hidden, choices: choices(r, hidden, { min: 0, max: n }) },
         reveal: { caption: `${hidden}. ${seen} and ${hidden} make ${n}.`, sprite: row([flow(items.slice(0, seen), { maxW: 150, gap: 5 }), sign('+'), flow(items.slice(seen), { maxW: 150, gap: 5 })], { gap: 10, align: 'middle' }) },
+        more: [(() => {
+          const h2 = n > 2 ? r.pick(times(n - 1, (i) => i + 1).filter((x) => x !== hidden)) : hidden;
+          return { ask: `Eyes shut again… There are still ${n}. How many am I hiding now?`, scenes: [{ sprite: row([flow(items.slice(0, n - h2), { maxW: 190, gap: 5 }), cover(70, 44)], { gap: 14, align: 'middle' }) }], answer: { type: 'number', value: h2, choices: choices(r, h2, { min: 0, max: n }) }, reveal: { caption: `${h2}. ${n - h2} and ${h2} make ${n}.` } };
+        })()],
         look: ['Does he count on from what he can see ("3… 4, 5: two!")?'],
         easier: 'Use 3 altogether.',
         harder: 'Let him hide some and you guess. Get it wrong sometimes so he can correct you.',
@@ -151,6 +157,7 @@ export default [
         ask: `Two towers of ${n}. How many ${useCubes ? 'cubes' : 'bricks'} is that altogether?`,
         answer: { type: 'number', value: n * 2, choices: choices(r, n * 2, { min: 1 }) },
         reveal: { caption: `${n} and ${n} make ${n * 2}. Stack one on the other and count.`, sprite: useCubes ? rod([...times(n, () => c1), ...times(n, () => c2)], true) : tower([...times(n, () => c1), ...times(n, () => c2)]) },
+        more: [numQ(r, 'Take one off. How many now?', n * 2 - 1)],
         look: ['Does he count every brick from 1, or carry on from the first tower?'],
         easier: 'Towers of 1 or 2.',
         harder: 'Make three towers the same.',
@@ -183,6 +190,7 @@ export default [
         ask: askPart ? `There are ${total} altogether, and ${a} are ${c1}. How many are ${c2}?` : `How many ${c1}? How many ${c2}? How many altogether?`,
         answer: { type: 'number', value, choices: choices(r, value, { min: 1 }) },
         reveal: { caption: `${a} ${c1} and ${b} ${c2} make ${total}.` },
+        more: [...(askPart ? [numQ(r, `How many are ${c1}?`, a)] : [numQ(r, `How many are ${c1}?`, a), numQ(r, `How many are ${c2}?`, b)])],
         look: ['Can he tell you each part and the total without mixing them up?'],
         easier: 'Use 3 bricks: 2 of one colour and 1 of the other.',
         harder: 'Snap it apart at the colour change and ask again. Has the total changed?',
@@ -210,6 +218,7 @@ export default [
         ask: `The engine has ${a}. If it picks up ${b} more, how many wagons will it be pulling?`,
         answer: { type: 'number', value: total, choices: choices(r, total, { min: 1 }) },
         reveal: { caption: `${a} and ${b} more makes ${total}. Hook them on and count.`, sprite: train([...times(a, () => w('blue')), ...times(b, () => w('green'))]) },
+        more: [numQ(r, 'One wagon gets left at the station. How many now?', total - 1)],
         look: ['Does he guess before joining them, or wait and count? Encourage a guess first.'],
         easier: 'One wagon and one more.',
         harder: 'Unhook some instead: "the engine leaves 2 behind".',

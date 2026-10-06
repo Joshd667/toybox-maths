@@ -1,6 +1,6 @@
 // Comparing: more, fewer, the same, and how many more.
 import {
-  A, lv, plural, times, choices, pickToy, has,
+  A, lv, plural, times, choices, pickToy, has, numQ,
   flow, row, column, tag, tower, rod, duplo, cube, animal, car, hit, frame, text, gap,
   FARM, BRICK_COLOURS, MORE_COLOURS,
 } from './kit.js';
@@ -45,6 +45,7 @@ export default [
         ask: askFewer ? 'Which group has fewer?' : 'Which group has more?',
         answer: { type: 'tap', correct: [correct] },
         reveal: { caption: `${Math.max(a, b)} is more than ${Math.min(a, b)}. Line them up in pairs to see the extra ${b - a === 1 ? 'one' : 'ones'}.` },
+        more: [numQ(r, 'How many are in the bigger group?', b), numQ(r, 'How many more is that than the smaller group?', b - a, `${b - a} more.`, { min: 1 })],
         look: ['Does he judge by eye or count? For close numbers, counting or pairing up is the reliable way.'],
         easier: 'Make one group much bigger than the other.',
         harder: 'Ask "how many more?" after he has chosen.',
@@ -78,6 +79,7 @@ export default [
           caption: extra ? `${each} each, and 1 left over. Ask him what to do with the spare one.` : `${each} each. Nobody has more than anybody else.`,
           sprite: row(kinds.map((a) => column([flow(times(each, food), { maxW: 46, gap: 3, rowGap: 3 }), animal(a)], { gap: 6 })), { gap: 26, align: 'bottom' }),
         },
+        more: [numQ(r, 'How many biscuits did each animal get?', each)],
         look: ['Does he deal them out one at a time? That is the reliable method.', 'Does he check at the end that the piles match?'],
         easier: 'Two animals and 4 biscuits.',
         harder: 'Add one extra biscuit so it does not share out evenly.',
@@ -105,7 +107,7 @@ export default [
       const L = tallLeft ? mk(b, cb) : mk(a, ca);
       const Rt = tallLeft ? mk(a, ca) : mk(b, cb);
       const thing = useCubes ? 'cubes' : 'bricks';
-      const base = { setup: [`Build two towers, one with ${a} ${thing} and one with ${b}. Stand them side by side on the table.`], words: ['taller', 'shorter', 'the same', 'how many more'] };
+      const base = { more: [numQ(r, 'How many are in the tall tower?', b)], setup: [`Build two towers, one with ${a} ${thing} and one with ${b}. Stand them side by side on the table.`], words: ['taller', 'shorter', 'the same', 'how many more'] };
       if (level === 1) {
         const askShort = r.bool(0.4);
         return {
@@ -153,6 +155,7 @@ export default [
         ask: `This is my tower. Can you build one with ${words} mine?`,
         answer: { type: 'do' },
         reveal: { caption: `Mine has ${n}. His should have ${target}.`, sprite: row([column([mk(n, 'red'), text('mine', 11)], { gap: 4 }), column([mk(target, 'blue'), text('his', 11)], { gap: 4 })], { gap: 30, align: 'bottom' }) },
+        more: [numQ(r, 'How many are in your tower?', target)],
         look: ['Does he build alongside yours and compare, or count yours first?'],
         easier: 'Ask for one exactly the same.',
         harder: 'Ask for one fewer, or two more.',
@@ -183,6 +186,7 @@ export default [
         setup: [`Put out ${n} ${things}.`, `Lay out ${plural(homes, 'long Duplo brick', 'long Duplo bricks')} in a row. Each one is a ${place}.`],
         scenes: [{ sprite: scene }],
         words: ['enough', 'not enough', 'one each', 'how many more'],
+        more: [numQ(r, `How many ${things} are there altogether?`, n)],
         look: ['Does he match them up one by one to find out?'],
         easier: 'Use 2 or 3, with none missing or lots missing.',
         harder: `Ask how many more ${place}s are needed.`,

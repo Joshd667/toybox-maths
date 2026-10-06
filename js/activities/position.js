@@ -1,7 +1,7 @@
 // Position words: on, under, behind, between, first, last… said, heard and acted out.
 import {
   A, lv, times, has, list,
-  row, column, model, build, block, car, animal, bunny, engine, frame, text, arrow, hit, tag, flag, scale, layer, flow,
+  row, column, model, build, block, car, animal, bunny, engine, wagon, train, onTrack, frame, text, arrow, hit, tag, flag, scale, layer, flow,
   BRICK_COLOURS, MORE_COLOURS, FARM,
 } from './kit.js';
 
@@ -126,12 +126,14 @@ export default [
         }
       }
       const min = Math.min(...bricks.map((b) => b.x));
+      const done = { caption: n > 2 ? 'Does his match? "Next to" can be either side, so a mirror image is right too.' : 'Does his match?', sprite: model(bricks.map((b) => ({ ...b, x: b.x - min }))) };
+      // Each spoken step is its own question; the picture only appears after the last one.
+      const qs = steps.map((t, i) => ({ ask: t, scenes: [], answer: { type: 'do' }, ...(i === steps.length - 1 ? { reveal: done } : {}) }));
       return {
-        setup: [`Give him ${n} square Duplo bricks: ${list(cs.slice(0, n))}.`, 'Read one step at a time. Keep the picture to yourself until the end.', ...steps.map((s, i) => `Step ${i + 1}: ${s}`)],
+        setup: [`Give him ${n} square Duplo bricks: ${list(cs.slice(0, n))}.`, 'Read one step at a time. No pointing.'],
         scenes: [],
-        ask: steps[0] + ' Ready for the next one?',
-        answer: { type: 'do' },
-        reveal: { caption: n > 2 ? 'Does his match? "Next to" can be either side, so a mirror image is right too.' : 'Does his match?', sprite: model(bricks.map((b) => ({ ...b, x: b.x - min }))) },
+        ...qs[0],
+        more: qs.slice(1),
         look: ['Which words does he act on straight away, and which make him pause?'],
         easier: 'Two bricks: one down, one on top.',
         harder: 'Swap roles. He tells you what to build, a step at a time.',
@@ -150,36 +152,34 @@ export default [
     why: '"First", "last", "behind" and "in front of" are both position words and maths words. They describe order, which is what a number line is.',
     make(r, level) {
       const n = lv(level, 3, 4, 5);
-      const kinds = r.sample(['cow', 'pig', 'sheep', 'horse', 'duck', 'lion', 'elephant'], n); // left to right; front of the queue is on the RIGHT
+      const kinds = r.sample(['cow', 'pig', 'sheep', 'horse', 'duck', 'lion', 'elephant'], n); // left to right; the front of the queue is on the RIGHT
       const front = (i) => kinds[n - 1 - i]; // i = 0 is first in line
-      let ask;
-      let correct;
-      if (level === 1) {
-        const first = r.bool();
-        ask = first ? 'Who is first in the line?' : 'Who is last in the line?';
-        correct = first ? front(0) : front(n - 1);
-      } else if (level === 2) {
-        const i = r.int(1, n - 2);
-        const behind = r.bool();
-        ask = behind ? `Who is just behind the ${front(i)}?` : `Who is just in front of the ${front(i)}?`;
-        correct = behind ? front(i + 1) : front(i - 1);
-      } else {
-        const t = r.pick(['second', 'third', 'between']);
-        if (t === 'between') {
-          const i = r.int(1, n - 2);
-          ask = `Who is between the ${front(i - 1)} and the ${front(i + 1)}?`;
-          correct = front(i);
+      const question = (t) => {
+        let ask;
+        let correct;
+        if (t === 'first') [ask, correct] = ['Who is first in the line?', front(0)];
+        else if (t === 'last') [ask, correct] = ['Who is last in the line?', front(n - 1)];
+        else if (t === 'second') [ask, correct] = ['Who is second in the line?', front(1)];
+        else if (t === 'third') [ask, correct] = ['Who is third in the line?', front(2)];
+        else if (t === 'behind') {
+          const i = r.int(0, n - 2);
+          [ask, correct] = [`Who is just behind the ${front(i)}?`, front(i + 1)];
+        } else if (t === 'infront') {
+          const i = r.int(1, n - 1);
+          [ask, correct] = [`Who is just in front of the ${front(i)}?`, front(i - 1)];
         } else {
-          ask = `Who is ${t} in the line?`;
-          correct = front(t === 'second' ? 1 : 2);
+          const i = r.int(1, n - 2);
+          [ask, correct] = [`Who is between the ${front(i - 1)} and the ${front(i + 1)}?`, front(i)];
         }
-      }
+        return { ask, answer: { type: 'tap', correct: [correct] }, reveal: { caption: `The ${correct}. The ${front(0)} is first because it is nearest the flag.` } };
+      };
+      const types = r.shuffle(lv(level, ['first', 'last'], ['behind', 'infront', 'first', 'last'], ['second', 'third', 'between', 'behind', 'infront'])).slice(0, 3);
+      const [first, ...rest] = types.map(question);
       return {
-        setup: [`Line up these ${n} animals nose to tail, all facing the same way.`, 'Put something at the front for them to walk towards: a gate, a cup, a flag.'],
+        setup: [`Line up these ${n} animals nose to tail, all facing the same way.`, 'Put something at the front for them to walk towards: a cup, a flag.'],
         scenes: [{ sprite: row([row(kinds.map((k) => hit(animal(k), k)), { gap: 6 }), flag()], { gap: 10 }) }],
-        ask,
-        answer: { type: 'tap', correct: [correct] },
-        reveal: { caption: `The ${correct}. The ${front(0)} is first because it is nearest the flag.` },
+        ...first,
+        more: rest,
         look: ['Does he know which end is the front? The way they face decides it.'],
         easier: 'Three animals, and ask only for first and last.',
         harder: 'Ask who is second, or who is between two others.',
@@ -223,6 +223,48 @@ export default [
         easier: 'Two places, and say them again as he goes.',
         harder: 'He gives you a route, and you drive it.',
         words: ['first', 'then', 'last', 'through', 'round', 'over', 'past'],
+      };
+    },
+  }),
+  A({
+    id: 'wagon-order',
+    title: 'Which wagon?',
+    strand: 'position',
+    toys: ['brio'],
+    minutes: 3,
+    research: ['devmatters', 'purpura2017'],
+    why: '"Behind", "in front of", "last" and "between" describe order, and a train is an order he can drive around.',
+    make(r, level) {
+      const n = lv(level, 3, 4, 5);
+      const cols = r.sample(['blue', 'green', 'yellow', 'red', 'purple', 'orange'], n); // cols[0] is hooked to the engine
+      const question = (t) => {
+        let ask;
+        let c;
+        if (t === 'front') [ask, c] = ['Which wagon is just behind the engine?', cols[0]];
+        else if (t === 'back') [ask, c] = ['Which wagon is right at the back?', cols[n - 1]];
+        else if (t === 'behind') {
+          const i = r.int(0, n - 2);
+          [ask, c] = [`Which wagon is just behind the ${cols[i]} one?`, cols[i + 1]];
+        } else if (t === 'infront') {
+          const i = r.int(1, n - 1);
+          [ask, c] = [`Which wagon is just in front of the ${cols[i]} one?`, cols[i - 1]];
+        } else {
+          const i = r.int(1, n - 2);
+          [ask, c] = [`Which wagon is between the ${cols[i - 1]} one and the ${cols[i + 1]} one?`, cols[i]];
+        }
+        return { ask, answer: { type: 'tap', correct: [c] }, reveal: { caption: `The ${c} wagon.` } };
+      };
+      const types = r.shuffle(lv(level, ['front', 'back'], ['front', 'back', 'behind', 'infront'], ['behind', 'infront', 'between', 'back'])).slice(0, 3);
+      const [first, ...rest] = types.map(question);
+      return {
+        setup: [`Hook up ${n} wagons in this order behind the engine: ${cols.join(', ')}.`, 'No wagons in those colours? Put a coloured brick on each one.'],
+        scenes: [{ sprite: onTrack(row([...[...cols].reverse().map((c) => hit(wagon(null, c), c)), engine()], { gap: 1 })) }],
+        ...first,
+        more: rest,
+        look: ['Does he use the engine to work out which end is the front?'],
+        easier: 'Three wagons, and ask for the front and the back.',
+        harder: 'He asks you a "which wagon" question.',
+        words: ['behind', 'in front of', 'last', 'between', 'next to'],
       };
     },
   }),

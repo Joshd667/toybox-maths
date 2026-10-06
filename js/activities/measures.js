@@ -1,6 +1,6 @@
 // Sorting, shape and measuring: comparing by colour, kind, shape, length and height.
 import {
-  A, lv, times, has, list, pickToy, choices, an, prop,
+  A, lv, times, has, list, pickToy, choices, an, prop, numQ,
   row, column, flow, tower, rod, duplo, cube, car, animal, block, dots, flat, ramp, train, wagon, engine, onTrack,
   frame, text, arrow, hit, cover, gap, qbox, sp, at,
   BRICK_COLOURS, MORE_COLOURS, FARM, BLOCK_NAME,
@@ -18,49 +18,46 @@ export default [
     make(r, level, ctx) {
       const [c1, c2] = r.sample(BRICK_COLOURS, 2);
       const grp = (items) => frame(flow(items, { maxW: 124, gap: 5, rowGap: 5 }), { pad: 8, minW: 110 });
-      let L;
-      let Rt;
-      let item;
-      let correct;
+      let L; // the first group
+      let Rt; // the second group
+      let mk; // mk(true) makes a new thing that belongs with L, mk(false) with Rt
       let rule;
       let setup;
       if (level === 1) {
         const toy = pickToy(r, ctx, ['cars', 'duplo', 'cubes', 'wooden']);
         L = times(3, () => toy.make(r, c1));
         Rt = times(3, () => toy.make(r, c2));
-        const left = r.bool();
-        item = toy.make(r, left ? c1 : c2);
-        correct = left ? 'left' : 'right';
+        mk = (first) => toy.make(r, first ? c1 : c2);
         rule = `colour: ${c1} on one side, ${c2} on the other`;
         setup = `Sort six ${toy.many} into two groups by colour: ${c1} and ${c2}.`;
       } else if (level === 2) {
         L = times(3, () => car(r.pick(MORE_COLOURS)));
         Rt = times(3, () => animal(r.pick(FARM)));
-        const left = r.bool();
-        item = left ? car(r.pick(MORE_COLOURS)) : animal(r.pick(FARM));
-        correct = left ? 'left' : 'right';
+        mk = (first) => (first ? car(r.pick(MORE_COLOURS)) : animal(r.pick(FARM)));
         rule = 'things with wheels on one side, animals on the other. Colour does not matter';
         setup = 'Sort three cars and three animals into two groups. Mix the colours up.';
       } else {
         L = [car(c1), duplo(c1), cube(c1)];
         Rt = [car(c2), duplo(c2), cube(c2)];
-        const left = r.bool();
-        const mk = r.pick([car, (c) => block('cube', c), (c) => block('roof', c)]);
-        item = mk(left ? c1 : c2);
-        correct = left ? 'left' : 'right';
+        mk = (first) => r.pick([car, (c) => block('cube', c), (c) => block('roof', c)])(first ? c1 : c2);
         rule = `colour: everything ${c1} on one side, everything ${c2} on the other, whatever kind of toy it is`;
         setup = `Make two mixed groups: a ${c1} car, brick and cube, and a ${c2} car, brick and cube.`;
       }
-      if (r.bool()) {
-        [L, Rt] = [Rt, L];
-        correct = correct === 'left' ? 'right' : 'left';
-      }
+      const swapped = r.bool(); // which side of the picture the first group is drawn on
+      const groups = () => row(swapped ? [hit(grp(Rt), 'left'), hit(grp(L), 'right')] : [hit(grp(L), 'left'), hit(grp(Rt), 'right')], { gap: 12, align: 'top' });
+      const question = (ask) => {
+        const first = r.bool();
+        return {
+          ask,
+          scenes: [{ sprite: column([row([text('new one', 11, { bold: true }), mk(first)], { gap: 8, align: 'middle' }), groups()], { gap: 14 }) }],
+          answer: { type: 'tap', correct: [first !== swapped ? 'left' : 'right'] },
+          reveal: { caption: `The rule is ${rule}.` },
+        };
+      };
       return {
-        setup: [setup, 'Do not tell him the rule. Hold up the new one.'],
-        scenes: [{ sprite: column([row([text('new one', 11, { bold: true }), item], { gap: 8, align: 'middle' }), row([hit(grp(L), 'left'), hit(grp(Rt), 'right')], { gap: 12, align: 'top' })], { gap: 14 }) }],
-        ask: 'I am sorting. Which group does this one belong in?',
-        answer: { type: 'tap', correct: [correct] },
-        reveal: { caption: `The rule is ${rule}.` },
+        setup: [setup, 'Do not tell him the rule. Hold up a new one each time.'],
+        ...question('I am sorting. Which group does this one belong in?'),
+        more: [question('And this one?'), question('And this one?')],
         look: ['Can he say why? "Because it is red" is the real answer; the tap is just the start.'],
         easier: 'Sort by colour with one kind of toy.',
         harder: 'Sort the same toys a second way. If you sorted by colour, now sort by kind.',
@@ -134,6 +131,7 @@ export default [
         ask: 'Can you line them up from the shortest to the tallest?',
         answer: { type: 'do' },
         reveal: { caption: 'Like stairs going up.', sprite: row(sorted.map(mk), { gap: 14 }) },
+        more: [numQ(r, 'How many are in the tallest tower?', sorted[k - 1]), numQ(r, 'How many are in the shortest?', sorted[0])],
         look: ['Does he find the shortest and tallest first, then fit the middle ones in?', 'Make sure they all stand on the same flat surface, or the comparison is unfair.'],
         easier: 'Three towers that are very different heights.',
         harder: 'Hand him one more tower and ask where it fits.',
@@ -205,6 +203,7 @@ export default [
         ask: 'Which train is longer?',
         answer: { type: 'tap', correct: [longTop ? 'top' : 'bottom'] },
         reveal: { caption: `The one with ${b} wagons. Line the engines up nose to nose to check.` },
+        more: [numQ(r, 'How many wagons are on the longer train?', b), numQ(r, 'How many more wagons does it have than the short one?', b - a, undefined, { min: 1 })],
         look: ['At the harder step, does he pick the one that sticks out in front? Line them up and look again together.'],
         easier: 'One wagon against three.',
         harder: 'Push the shorter train forward so it pokes out in front.',
@@ -275,15 +274,18 @@ export default [
     why: 'Feeling for a shape without looking makes him think about flat faces, corners and curves, and gives you both plenty of shape words to use.',
     make(r, level) {
       const sets = lv(level, [['cube', 'cyl'], ['roof', 'cyl'], ['brick', 'cyl']], [['cube', 'cyl', 'roof'], ['brick', 'roof', 'cyl']], [['cube', 'brick', 'pillar', 'roof'], ['cube', 'brick', 'arch', 'cyl']]);
-      const set = r.pick(sets);
-      const target = r.pick(set);
+      const set = r.shuffle(r.pick(sets));
       const c = r.pick(MORE_COLOURS);
-      return {
-        setup: [`Put these blocks in a bag or pillowcase: ${list(set.map((s) => an(BLOCK_NAME[s])))}.`, 'Show him the picture. No peeking in the bag.'],
+      const find = (target, ask) => ({
+        ask,
         scenes: [{ sprite: row([block(target, c), arrow(24), cover(74, 48)], { gap: 12, align: 'middle' }) }],
-        ask: 'Can you find this one just by feeling?',
         answer: { type: 'do' },
         reveal: { caption: `The ${BLOCK_NAME[target]}. Talk about how he knew.` },
+      });
+      return {
+        setup: [`Put these blocks in a bag or pillowcase: ${list(set.map((s) => an(BLOCK_NAME[s])))}.`, 'Show him the picture. No peeking in the bag.'],
+        ...find(set[0], 'Can you find this one just by feeling?'),
+        more: set.slice(1, 3).map((t) => find(t, 'Put it back. Now can you find this one?')),
         look: ['What does he say about how it feels? Feed him the words: flat, pointy, round, corners, edges, rolls.'],
         easier: 'Two very different blocks, such as a cube and a cylinder.',
         harder: 'Describe a block without naming it ("it has a point and three flat sides") and let him find it.',
