@@ -107,4 +107,5 @@ Saved in `localStorage` under `toybox-maths-v2`. If the saved shape changes, bum
 
     node tools/validate.mjs && git add -A && git commit -m "..." && git push origin main
 
-Phones pick up a change the second time the app is opened after publishing (see the comment in `sw.js`).
+Phones fetch fresh files whenever they are online, and fall back to the saved copy offline (see `sw.js`).
+Do not go back to serving saved files first: it once left a phone with new HTML and old CSS and JavaScript, which broke the tabs.
