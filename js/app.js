@@ -13,13 +13,16 @@ import { makeRng, newSeed } from './rng.js';
 import * as D from './draw.js';
 import * as store from './store.js';
 import { celebrate, finale, hush } from './reward.js';
+import { reword } from './wording.js';
 
 const { render, numeral } = D;
 const view = document.getElementById('view');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const strandOf = (a) => STRANDS.find((s) => s.id === a.strand);
 const pic = (sprite, o = {}) => render(sprite, { bare: true, pad: 2, zoom: 3, ...o });
-const STARS_TO_FINISH = 3;
+const starsToFinish = () => store.settings().stars;
+// Activity text is written about "he"; w() rewrites it for this child and makes it safe to put on the page.
+const w = (s) => esc(reword(String(s), store.child()?.pronoun));
 
 // ---------------------------------------------------------------- toys
 // "none" is the group of activities that need nothing but the phone.
@@ -39,8 +42,10 @@ const toyArt = {
   none: () => D.row([D.card(1, 40), D.card(2, 40), D.card(3, 40)], { gap: 3 }),
 };
 const toyName = (id) => TOY_TILES.find((t) => t.id === id)?.name || '';
+const owned = () => store.settings().toys;
+const toyTiles = () => TOY_TILES.filter((t) => t.id === 'none' || owned().includes(t.id));
 const forToy = (id) => ACTIVITIES.filter((a) => (id === 'none' ? a.toys.length === 0 : a.toys.includes(id)));
-const forSkill = (id) => ACTIVITIES.filter((a) => a.strand === id);
+const forSkill = (id) => ACTIVITIES.filter((a) => a.strand === id && store.playable(a));
 const MASCOTS = ['giraffe', 'elephant', 'lion', 'duck', 'pig', 'cow', 'sheep', 'horse'];
 const mascot = (c) => pic(D.animal(c?.animal || 'giraffe'));
 
@@ -68,13 +73,13 @@ let homeMode = 'toy';
 function home() {
   const tiles =
     homeMode === 'toy'
-      ? `<div class="tiles">${TOY_TILES.map((t) => {
+      ? `<div class="tiles">${toyTiles().map((t) => {
           const n = forToy(t.id).length;
           return `<a class="tile" href="#/toy/${t.id}"><span class="tile-pic">${pic(toyArt[t.id]())}</span><span class="tile-name">${esc(t.name)}</span><span class="tile-n">${n} ${n === 1 ? 'activity' : 'activities'}</span></a>`;
         }).join('')}</div>`
       : `<div class="skills">${STRANDS.map((s) => {
           const sum = store.strandSummary(s.id);
-          return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${sum.total} activities, step ${sum.level}</span></a>`;
+          return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${forSkill(s.id).length} activities, step ${sum.level}</span></a>`;
         }).join('')}</div>`;
   return `${topBar('Toybox Maths')}
   <section class="page">
@@ -97,7 +102,7 @@ function list(kind, id) {
   // Chips filter by the other thing: skills when looking at a toy, toys when looking at a skill.
   const chips = isToy
     ? STRANDS.filter((s) => all.some((a) => a.strand === s.id)).map((s) => ({ id: s.id, name: s.name }))
-    : TOY_TILES.filter((t) => all.some((a) => (t.id === 'none' ? a.toys.length === 0 : a.toys.includes(t.id)))).map((t) => ({ id: t.id, name: t.name }));
+    : toyTiles().filter((t) => all.some((a) => (t.id === 'none' ? a.toys.length === 0 : a.toys.includes(t.id)))).map((t) => ({ id: t.id, name: t.name }));
   if (!chips.some((c) => c.id === listFilter)) listFilter = null;
   const shown = all.filter((a) => !listFilter || (isToy ? a.strand === listFilter : listFilter === 'none' ? a.toys.length === 0 : a.toys.includes(listFilter)));
   const toy = isToy ? id : listFilter && listFilter !== 'none' ? listFilter : '';
@@ -130,7 +135,7 @@ let from = '#/'; // where the close button goes back to
 
 function deal() {
   // Draw a fresh variation of the activity: new numbers, colours and questions.
-  const toys = flow.toy ? [flow.toy] : TOYS.map((t) => t.id);
+  const toys = flow.toy ? [flow.toy] : owned();
   flow.inst = flow.a.make(makeRng(flow.seed), flow.level, { toys });
   flow.qs = [flow.inst, ...(flow.inst.more || [])];
   flow.qi = 0;
@@ -152,7 +157,7 @@ function startActivity(id, toy) {
   return play();
 }
 
-const starRow = () => `<div class="stars" aria-label="${flow.stars} of ${STARS_TO_FINISH} stars">${Array.from({ length: Math.max(STARS_TO_FINISH, flow.stars) }, (_, i) => icon.star(i < flow.stars)).join('')}</div>`;
+const starRow = () => `<div class="stars" aria-label="${flow.stars} of ${starsToFinish()} stars">${Array.from({ length: Math.max(starsToFinish(), flow.stars) }, (_, i) => icon.star(i < flow.stars)).join('')}</div>`;
 const playTop = () => `<header class="top play-top">
     <a class="round" href="${from}" aria-label="Close">${icon.close}</a>
     <h1>${esc(flow.a.title)}</h1>
@@ -162,7 +167,7 @@ const playTop = () => `<header class="top play-top">
 
 function scenePic(sc) {
   const svg = render(sc.sprite, { label: sc.caption || 'Picture' });
-  const cap = sc.caption ? `<figcaption>${esc(sc.caption)}</figcaption>` : '';
+  const cap = sc.caption ? `<figcaption>${w(sc.caption)}</figcaption>` : '';
   if (sc.flash) return `<figure class="fig flash" data-secs="${sc.flash}"><div class="flash-pic">${svg}</div><button class="btn primary" data-act="flash">Show for ${sc.flash} seconds</button>${cap}</figure>`;
   return `<figure class="fig">${svg}${cap}</figure>`;
 }
@@ -175,7 +180,11 @@ function setupScreen() {
   <section class="page stage">
     <p class="kicker">Set up</p>
     ${pics.map(scenePic).join('')}
-    <ul class="setup">${inst.setup.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
+    <ul class="setup">${inst.setup.map((t) => `<li>${w(t)}</li>`).join('')}</ul>
+    <div class="preview">
+      <p class="kicker">${flow.qs.length > 1 ? 'The questions' : 'The question'}</p>
+      <ol>${flow.qs.map((q) => `<li>${w(q.ask)}</li>`).join('')}</ol>
+    </div>
     <div class="controls">
       <div class="seg" role="group" aria-label="Step">${[1, 2, 3].map((l) => `<button data-act="level" data-v="${l}" aria-pressed="${l === level}" ${ls.includes(l) ? '' : 'disabled'}>Step ${l}</button>`).join('')}</div>
       <button class="btn slim" data-act="shuffle">${icon.dice} Change it</button>
@@ -200,12 +209,12 @@ function askScreen() {
   const hands = ['do', 'open', 'spinner'].includes(q.answer.type); // answered with the toys, not the screen
   return `${playTop()}
   <section class="page stage">
-    ${q.note ? `<p class="note"><b>You</b> ${esc(q.note)}</p>` : ''}
-    <p class="say">${esc(q.ask)}</p>
+    ${q.note ? `<p class="note"><b>You</b> ${w(q.note)}</p>` : ''}
+    <p class="say">${w(q.ask)}</p>
     ${scenes.map(scenePic).join('')}
     ${answerArea(q.answer)}
     <p class="feedback" id="feedback" aria-live="polite"></p>
-    <div class="reveal" id="reveal" hidden>${q.reveal ? `<p>${esc(q.reveal.caption)}</p>${q.reveal.sprite ? `<figure class="fig">${render(q.reveal.sprite, { label: 'Answer picture' })}</figure>` : ''}` : ''}</div>
+    <div class="reveal" id="reveal" hidden>${q.reveal ? `<p>${w(q.reveal.caption)}</p>${q.reveal.sprite ? `<figure class="fig">${render(q.reveal.sprite, { label: 'Answer picture' })}</figure>` : ''}` : ''}</div>
     <div class="mascot" id="mascot">${mascot(store.child())}</div>
   </section>
   <footer class="bar" id="bar">${hands ? `<button class="btn" data-act="skip">Skip</button><button class="btn primary big" data-act="did-it">Did it!</button>` : `${q.answer.multi ? '<button class="btn primary big" data-act="check">Check</button>' : ''}<button class="btn quiet" data-act="show">Show the answer</button>`}</footer>`;
@@ -214,7 +223,7 @@ function askScreen() {
 // What the bottom bar offers once a question is finished.
 function nextBar() {
   const more = flow.qi < flow.qs.length - 1;
-  const enough = flow.stars >= STARS_TO_FINISH;
+  const enough = flow.stars >= starsToFinish();
   const next = more ? 'Next question' : 'New set-up';
   return enough
     ? `<button class="btn" data-act="next">${more ? 'One more' : 'New set-up'}</button><button class="btn primary big" data-act="finish">Finish</button>`
@@ -243,13 +252,13 @@ function tipsSheet() {
   <aside class="sheet" role="dialog" aria-label="Tips">
     <button class="round sheet-close" data-act="close-sheet" aria-label="Close">${icon.close}</button>
     <h2>Watch for</h2>
-    <ul class="setup">${inst.look.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-    <h2>Easier</h2><p>${esc(inst.easier)}</p>
-    <h2>Harder</h2><p>${esc(inst.harder)}</p>
+    <ul class="setup">${inst.look.map((t) => `<li>${w(t)}</li>`).join('')}</ul>
+    <h2>Easier</h2><p>${w(inst.easier)}</p>
+    <h2>Harder</h2><p>${w(inst.harder)}</p>
     <h2>Words to use</h2>
     <p class="words">${inst.words.map((w) => `<em>${esc(w)}</em>`).join('')}</p>
     <h2>Why this one</h2>
-    <p>${esc(a.why)}</p>
+    <p>${w(a.why)}</p>
     <ul class="refs">${a.research.map(refItem).join('')}</ul>
   </aside>`;
 }
@@ -276,7 +285,7 @@ function finishQuestion(gotIt) {
     flow.stars++;
     setFeedback(true, YES[Math.floor(Math.random() * YES.length)]);
     document.querySelector('.play-top .stars').outerHTML = starRow();
-    celebrate(store.soundOn());
+    celebrate(store.settings().sound);
   }
   document.getElementById('bar').innerHTML = nextBar();
   document.querySelectorAll('.answers button').forEach((b) => (b.disabled = true));
@@ -312,6 +321,9 @@ function progress() {
 
 // ---------------------------------------------------------------- who is playing
 let pickedMascot = null;
+let pickedPronoun = 'he';
+const PRONOUNS = [['he', 'He'], ['she', 'She'], ['they', 'They']];
+const pronounSeg = (act, current) => `<div class="seg" role="group" aria-label="Wording">${PRONOUNS.map(([v, label]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === current}">${label}</button>`).join('')}</div>`;
 let confirmRemove = null;
 function who() {
   const kids = store.children();
@@ -334,21 +346,54 @@ function who() {
       <label class="field"><span>Name</span><input name="name" maxlength="14" autocomplete="off" autocapitalize="words" placeholder="Name or nickname" /></label>
       <p class="field-label">Their animal</p>
       <div class="mascots">${MASCOTS.map((m) => `<button type="button" class="mascot-pick" data-act="mascot" data-v="${m}" aria-pressed="${m === pickedMascot}" aria-label="${m}">${pic(D.animal(m))}</button>`).join('')}</div>
+      <p class="field-label">The questions should say</p>
+      ${pronounSeg('new-pronoun', pickedPronoun)}
       <button class="btn primary big" type="submit">${firstRun ? 'Start' : 'Add'}</button>
     </form>
-    ${firstRun ? '' : `<h2>Sound</h2><div class="seg" role="group" aria-label="Sound"><button data-act="sound" data-v="1" aria-pressed="${store.soundOn()}">On</button><button data-act="sound" data-v="0" aria-pressed="${!store.soundOn()}">Off</button></div>`}
   </section>`;
+}
+
+// ---------------------------------------------------------------- settings
+const onOff = (key, on) => `<div class="seg" role="group"><button data-act="set" data-key="${key}" data-v="1" aria-pressed="${on}">On</button><button data-act="set" data-key="${key}" data-v="0" aria-pressed="${!on}">Off</button></div>`;
+function settingsScreen() {
+  const s = store.settings();
+  const c = store.child();
+  return `${topBar('Settings')}
+  <section class="page settings">
+    <div class="setting"><h2>Look</h2>
+      <div class="seg" role="group" aria-label="Look">${[['system', 'Match phone'], ['light', 'Light'], ['dark', 'Dark']].map(([v, l]) => `<button data-act="set" data-key="theme" data-v="${v}" aria-pressed="${s.theme === v}">${l}</button>`).join('')}</div>
+    </div>
+    <div class="setting"><h2>Sound</h2>${onOff('sound', s.sound)}</div>
+    <div class="setting"><h2>Animation</h2>${onOff('motion', s.motion)}<p>Stars flying and the animal jumping.</p></div>
+    <div class="setting"><h2>Stars to finish a turn</h2>
+      <div class="seg" role="group" aria-label="Stars to finish">${[2, 3, 5].map((n) => `<button data-act="set" data-key="stars" data-v="${n}" aria-pressed="${s.stars === n}">${n}</button>`).join('')}</div>
+    </div>
+    <div class="setting"><h2>Questions about ${esc(c.name)} say</h2>${pronounSeg('pronoun', c.pronoun || 'he')}<p>Each child has their own. Change child from the name at the top.</p></div>
+    <div class="setting"><h2>Our toys</h2><p>Untick anything you do not have. Its activities are hidden.</p>
+      <div class="own">${TOYS.map((t) => `<button class="chip" data-act="own" data-v="${t.id}" aria-pressed="${s.toys.includes(t.id)}">${esc(t.name)}</button>`).join('')}</div>
+    </div>
+  </section>`;
+}
+// Put the look and animation settings into effect.
+function applySettings() {
+  const s = store.settings();
+  if (s.theme === 'system') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = s.theme;
+  document.body.classList.toggle('calm', !s.motion);
 }
 
 // ---------------------------------------------------------------- guide
 function guide() {
+  return reword(guideText(), store.child()?.pronoun);
+}
+function guideText() {
   return `${topBar('Guide')}
   <section class="page guide">
     <h2>How it works</h2>
     <ol class="steps">
       <li>Pick a toy, then an activity. Or tap Just pick one.</li>
       <li>Set up from the picture and tap Ready.</li>
-      <li>Read the question out. He answers with the toys, or taps the answer.</li>
+      <li>Read the question out. He answers with the toys or by tapping.</li>
       <li>Keep going for three stars, then say how it went.</li>
     </ol>
     <p>The round "i" button on any activity has what to watch for, easier and harder versions, and the research behind it.</p>
@@ -401,6 +446,7 @@ function screen() {
   }
   if (page === 'progress') return { html: progress(), tab: 'progress' };
   if (page === 'guide') return { html: guide(), tab: 'guide' };
+  if (page === 'settings') return { html: settingsScreen(), tab: 'settings' };
   if (page === 'who') return { html: who(), tab: '' };
   return { html: home(), tab: 'home' };
 }
@@ -477,8 +523,24 @@ function onTap(el, e) {
     confirmRemove = null;
     return draw(false);
   }
-  if (act === 'sound') {
-    store.setSound(v === '1');
+  if (act === 'new-pronoun') {
+    pickedPronoun = v;
+    return el.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b === el));
+  }
+  if (act === 'pronoun') {
+    store.setPronoun(v);
+    return draw(true);
+  }
+  if (act === 'set') {
+    const key = el.dataset.key;
+    store.set(key, key === 'stars' ? Number(v) : key === 'theme' ? v : v === '1');
+    applySettings();
+    return draw(true);
+  }
+  if (act === 'own') {
+    const toys = new Set(owned());
+    toys.has(v) ? toys.delete(v) : toys.add(v);
+    store.set('toys', TOYS.map((t) => t.id).filter((id) => toys.has(id)));
     return draw(true);
   }
   if (act === 'close-sheet') return document.getElementById('sheet').replaceChildren();
@@ -561,7 +623,7 @@ function onTap(el, e) {
   if (act === 'finish') {
     flow.stage = 'done';
     draw(false);
-    if (flow.stars) finale(store.soundOn());
+    if (flow.stars) finale(store.settings().sound);
     return;
   }
   if (act === 'rate') {
@@ -623,11 +685,13 @@ document.addEventListener('submit', (e) => {
   e.preventDefault();
   const typed = new FormData(e.target).get('name').trim();
   const name = typed || pickedMascot[0].toUpperCase() + pickedMascot.slice(1); // no name typed: call them by their animal
-  store.addChild(name, pickedMascot);
+  store.addChild(name, pickedMascot, pickedPronoun);
   pickedMascot = null;
+  pickedPronoun = 'he';
   go('#/');
 });
 
+applySettings();
 draw(false);
 
 // Works offline once installed.

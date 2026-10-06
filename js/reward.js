@@ -26,7 +26,7 @@ function chime(notes) {
   }
 }
 
-const calm = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const calm = () => document.body.classList.contains('calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const COLOURS = ['#F2B01E', '#F2B01E', '#FF7A59', '#5746E0', '#2E9E4B', '#E86AA6'];
 
 // Stars fly out from the middle of the screen.

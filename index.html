@@ -16,6 +16,13 @@
     <meta name="apple-mobile-web-app-title" content="Toybox" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <link rel="preload" href="./fonts/fredoka.woff2" as="font" type="font/woff2" crossorigin />
+    <script>
+      // Apply the chosen light/dark look before anything is drawn, so the page does not flash.
+      try {
+        var t = JSON.parse(localStorage.getItem('toybox-maths-v2') || '{}').settings;
+        if (t && t.theme && t.theme !== 'system') document.documentElement.dataset.theme = t.theme;
+      } catch (e) {}
+    </script>
     <link rel="stylesheet" href="./css/app.css" />
   </head>
   <body>
@@ -35,6 +42,10 @@
       <a href="#/guide" data-tab="guide">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5ZM12 6v13" /></svg>
         Guide
+      </a>
+      <a href="#/settings" data-tab="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h10M18 7h2M4 12h3M11 12h9M4 17h12M20 17h0" /><circle cx="16" cy="7" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="18" cy="17" r="2" /></svg>
+        Settings
       </a>
     </nav>
 

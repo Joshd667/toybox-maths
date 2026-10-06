@@ -14,6 +14,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `js/app.js` | The screens and all tap handling. Routes are listed at the top of the file. |
 | `js/store.js` | Children's profiles and progress (saved on the phone), and how the next activity is chosen. |
 | `js/reward.js` | Stars, the jumping animal and the chime when he gets one right. |
+| `js/wording.js` | Rewrites "he" text as "she" or "they" for a child's profile. Add new verbs there if "they" reads wrongly. |
 | `js/draw.js` | Every picture. Toy "sprites" plus layout helpers. Pure functions, no DOM. |
 | `js/rng.js` | Seeded random numbers, so every variation can be reproduced and tested. |
 | `js/research.js` | Every source cited, with what it found and what it does not show. |
@@ -84,6 +85,7 @@ Draw generic toys only: no branded characters or copies of a product's own artwo
 - The reader is a parent holding a toddler's attention with one hand. Short sentences. UK spelling.
 - `ask` is spoken to a child under three: concrete, one question.
 - The child is referred to as "he". There is no name anywhere in the app or repo, and it should stay that way (the site is public).
+- Write activity text about "he" (plain present tense: "Does he count…", "he says"); `wording.js` converts it. Check a new activity reads properly with They selected in Settings.
 - The child is "he" in activity text. Buttons and screens the app draws itself stay neutral, because there can be several children.
 - Children's names are typed into the app and saved on that phone only. Never put a name in the code or the repo.
 - Feedback to the child is never negative. Wrong taps fade. Right answers earn a star, a burst and a jump from the child's animal (the owner asked for this).

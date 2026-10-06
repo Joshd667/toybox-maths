@@ -2,19 +2,20 @@
 // Everything is kept in this phone's browser storage. Nothing is sent anywhere,
 // including the children's names.
 
-import { ACTIVITIES, STRANDS, byId, levelsOf } from './activities/index.js';
+import { ACTIVITIES, STRANDS, TOYS, byId, levelsOf } from './activities/index.js';
 
 const KEY = 'toybox-maths-v2';
 const fresh = () => ({
   v: 2,
   current: null, // id of the child who is playing
-  sound: true,
   children: [], // see newChild() below
+  settings: { theme: 'system', sound: true, motion: true, stars: 3, toys: TOYS.map((t) => t.id) },
 });
-const newChild = (name, animal) => ({
+const newChild = (name, animal, pronoun) => ({
   id: 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
   name,
   animal, // which drawn animal is this child's mascot
+  pronoun, // 'he', 'she' or 'they': how the activity text talks about them
   stars: 0, // every star ever earned
   strands: {}, // strand id -> { level: 1-3, score: running tally of easy/hard }
   acts: {}, // activity id -> { n: times played, last: { t, rating, level } }
@@ -24,7 +25,10 @@ const newChild = (name, animal) => ({
 let state = fresh();
 try {
   const raw = localStorage.getItem(KEY);
-  if (raw) state = { ...fresh(), ...JSON.parse(raw) };
+  if (raw) {
+    const saved = JSON.parse(raw);
+    state = { ...fresh(), ...saved, settings: { ...fresh().settings, ...saved.settings } };
+  }
 } catch {
   /* private mode or storage blocked: carry on without saving */
 }
@@ -39,8 +43,8 @@ const save = () => {
 // ---------------------------------------------------------------- children
 export const children = () => state.children;
 export const child = () => state.children.find((c) => c.id === state.current) || state.children[0] || null;
-export function addChild(name, animal) {
-  const c = newChild(name, animal);
+export function addChild(name, animal, pronoun = 'he') {
+  const c = newChild(name, animal, pronoun);
   state.children.push(c);
   state.current = c.id;
   save();
@@ -55,11 +59,19 @@ export function removeChild(id) {
   if (state.current === id) state.current = state.children[0]?.id || null;
   save();
 }
-export const soundOn = () => state.sound;
-export function setSound(on) {
-  state.sound = on;
+export function setPronoun(pronoun) {
+  child().pronoun = pronoun;
   save();
 }
+
+// ---------------------------------------------------------------- settings (shared by everyone on this phone)
+export const settings = () => state.settings;
+export function set(key, value) {
+  state.settings[key] = value;
+  save();
+}
+// Can this activity be played with the toys this family owns? (Activities needing no toys always can.)
+export const playable = (a) => a.toys.length === 0 || a.toys.some((t) => state.settings.toys.includes(t));
 
 // ---------------------------------------------------------------- progress (for the current child)
 export const strandState = (id) => child()?.strands[id] || { level: 1, score: 0 };
@@ -131,7 +143,7 @@ function weight(a) {
 
 // Choose one activity from a list (default: all of them). `not` is an id to avoid.
 export function pick(pool = ACTIVITIES, not = null) {
-  const list = pool.filter((a) => a.id !== not);
+  const list = pool.filter((a) => a.id !== not && playable(a));
   if (!list.length) return pool[0] || null;
   const total = list.reduce((s, a) => s + weight(a), 0);
   let x = Math.random() * total;

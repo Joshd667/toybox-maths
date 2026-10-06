@@ -154,7 +154,7 @@ export default [
         scenes: [{ caption: 'Your tower', sprite: mk(n, 'red') }],
         ask: `This is my tower. Can you build one with ${words} mine?`,
         answer: { type: 'do' },
-        reveal: { caption: `Mine has ${n}. His should have ${target}.`, sprite: row([column([mk(n, 'red'), text('mine', 11)], { gap: 4 }), column([mk(target, 'blue'), text('his', 11)], { gap: 4 })], { gap: 30, align: 'bottom' }) },
+        reveal: { caption: `Mine has ${n}. His should have ${target}.`, sprite: row([column([mk(n, 'red'), text('mine', 11)], { gap: 4 }), column([mk(target, 'blue'), text('the new one', 11)], { gap: 4 })], { gap: 30, align: 'bottom' }) },
         more: [numQ(r, 'How many are in your tower?', target)],
         look: ['Does he build alongside yours and compare, or count yours first?'],
         easier: 'Ask for one exactly the same.',
