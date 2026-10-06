@@ -1,0 +1,228 @@
+// research.js — every source the activities lean on.
+//
+// Rules for this file (please keep them when adding):
+//   1. Only add a source after checking it exists (DOI page, ERIC, publisher or official site).
+//   2. "found" says what the study actually found, in one plain sentence, with the children's ages.
+//   3. "caveat" says what it does NOT show. Most of these studies are links, not proof of cause,
+//      and most were done with children older than three.
+//   4. If the finding was not read from the abstract or paper itself, set checked: 'citation only'.
+
+export const REFS = {
+  eef2020: {
+    cite: 'Education Endowment Foundation (2020). Improving Mathematics in the Early Years and Key Stage 1: Guidance Report.',
+    url: 'https://educationendowmentfoundation.org.uk/education-evidence/guidance-reports/early-maths',
+    found: 'Five recommendations from a review of the evidence for ages 3 to 7, including: dedicate time to maths and build it into the day, use manipulatives (objects to handle) to develop understanding, and build on what children already know.',
+    caveat: 'Written for nurseries and schools, ages 3 to 7. It does not cover under-threes.',
+    checked: 'read',
+  },
+  devmatters: {
+    cite: 'Department for Education (2021, updated 2023). Development Matters: non-statutory curriculum guidance for the early years foundation stage.',
+    url: 'https://www.gov.uk/government/publications/development-matters--2',
+    found: 'Lists what 3- and 4-year-olds "will be learning to" do in maths: subitise up to 3, say one number per item, know the last number is the total, link numerals to amounts up to 5, compare with "more than" and "fewer than", understand position words without pointing, extend and fix ABAB patterns, and combine shapes.',
+    caveat: 'A curriculum guide for England, not a research study. It describes typical 3- and 4-year-olds, so a child under three is ahead of it by doing these at all.',
+    checked: 'read',
+  },
+  ncetm: {
+    cite: 'National Centre for Excellence in the Teaching of Mathematics. Early Years: six key areas of early mathematics learning.',
+    url: 'https://www.ncetm.org.uk/in-the-classroom/early-years/',
+    found: 'Organises early maths into six areas: cardinality and counting, comparison, composition, pattern, shape and space, and measures. The strands in this app follow them.',
+    caveat: 'Professional guidance for teachers, not a research study.',
+    checked: 'read',
+  },
+  gelman1978: {
+    cite: 'Gelman, R., & Gallistel, C. R. (1978). The Child\'s Understanding of Number. Harvard University Press.',
+    url: 'https://archive.org/details/childsunderstand00gelm',
+    found: 'Sets out five principles behind counting: one number per item, numbers always in the same order, the last number is the total, anything can be counted, and the order you count in does not matter. Based on work with children of about 2½ to 5.',
+    caveat: 'A theory of what children must grasp, not a test of any teaching method.',
+    checked: 'citation only',
+  },
+  gelmanmeck1983: {
+    cite: 'Gelman, R., & Meck, E. (1983). Preschoolers\' counting: Principles before skill. Cognition, 13(3), 343–359.',
+    url: 'https://doi.org/10.1016/0010-0277(83)90014-8',
+    found: '3- to 5-year-olds could judge whether a puppet had counted correctly, including for sets bigger than they could count themselves.',
+    caveat: 'Shows what children can recognise, not that puppet games teach counting.',
+    checked: 'citation only',
+  },
+  wynn1990: {
+    cite: 'Wynn, K. (1990). Children\'s understanding of counting. Cognition, 36(2), 155–193.',
+    url: 'https://doi.org/10.1016/0010-0277(90)90003-3',
+    found: '2- and 3-year-olds who could count a row often could not hand over a requested number of objects; they grabbed a handful. Reliable "give me N" came at around 3½.',
+    caveat: 'So if "Bring me 5" goes wrong before 3½, that is typical, not a problem.',
+    checked: 'citation only',
+  },
+  sarnecka2008: {
+    cite: 'Sarnecka, B. W., & Carey, S. (2008). How counting represents number: What children must learn and when they learn it. Cognition, 108(3), 662–674.',
+    url: 'https://doi.org/10.1016/j.cognition.2008.05.007',
+    found: 'Among 73 children aged 2 to 4, only those who truly understood counting knew that the next number word means exactly one more. Others could recite and point accurately without that insight.',
+    caveat: 'Describes how understanding develops. It did not test a way of teaching it.',
+    checked: 'read',
+  },
+  mix2012: {
+    cite: 'Mix, K. S., Sandhofer, C. M., Moore, J. A., & Russell, C. (2012). Acquisition of the cardinal word principle: The role of input. Early Childhood Research Quarterly, 27(2), 274–283.',
+    url: 'https://doi.org/10.1016/j.ecresq.2011.10.003',
+    found: 'Of four kinds of practice given to 3½-year-olds, only saying the total and then immediately counting ("three cars: one, two, three") produced real gains. Parents rarely do this unprompted.',
+    caveat: 'A small training study with 3½-year-olds.',
+    checked: 'read',
+  },
+  gunderson2011: {
+    cite: 'Gunderson, E. A., & Levine, S. C. (2011). Some types of parent number talk count more than others. Developmental Science, 14(5), 1021–1032.',
+    url: 'https://doi.org/10.1111/j.1467-7687.2011.01050.x',
+    found: 'Parents\' talk about counting or labelling objects the child could see predicted later number knowledge; other number talk did not. Talk about bigger sets (4 to 10) mattered more than talk about 1 to 3.',
+    caveat: 'A link found by observing families, not an experiment.',
+    checked: 'read',
+  },
+  levine2010: {
+    cite: 'Levine, S. C., Suriyakham, L. W., Rowe, M. L., Huttenlocher, J., & Gunderson, E. A. (2010). What counts in the development of young children\'s number knowledge? Developmental Psychology, 46(5), 1309–1319.',
+    url: 'https://doi.org/10.1037/a0019671',
+    found: 'In 44 families, how much parents talked about number when children were 14 to 30 months old predicted the children\'s number knowledge at 46 months.',
+    caveat: 'A link found by observing families, not an experiment.',
+    checked: 'read',
+  },
+  clements1999: {
+    cite: 'Clements, D. H. (1999). Subitizing: What is it? Why teach it? Teaching Children Mathematics, 5(7), 400–405.',
+    url: 'https://doi.org/10.5951/TCM.5.7.0400',
+    found: 'Explains subitising (seeing how many without counting) and recommends short glimpses of dot arrangements as practice.',
+    caveat: 'An article for teachers that explains and recommends. It is not itself a trial showing the practice works.',
+    checked: 'citation only',
+  },
+  ramani2008: {
+    cite: 'Ramani, G. B., & Siegler, R. S. (2008). Promoting broad and stable improvements in low-income children\'s numerical knowledge through playing number board games. Child Development, 79(2), 375–394.',
+    url: 'https://doi.org/10.1111/j.1467-8624.2007.01131.x',
+    found: 'Preschoolers who played a straight 1-to-10 number board game (spinner of 1 or 2, saying each number they moved through) for about an hour in total improved at naming numerals, counting, comparing numbers and placing numbers on a line. Gains were still there nine weeks later. A matching game with colours instead of numbers did nothing.',
+    caveat: 'The children averaged 4 years 9 months. A later study found a circular board did not work, so keep the track straight.',
+    checked: 'read',
+  },
+  huttenlocher1994: {
+    cite: 'Huttenlocher, J., Jordan, N. C., & Levine, S. C. (1994). A mental model for early arithmetic. Journal of Experimental Psychology: General, 123(3), 284–296.',
+    url: 'https://doi.org/10.1037/0096-3445.123.3.284',
+    found: 'Young children solved small adding and taking-away problems shown with objects that were then hidden, well before they could answer the same sums in words. This ability appears from roughly 2½ to 3.',
+    caveat: 'Works for very small numbers only. Summary taken from later reviews, not the original abstract.',
+    checked: 'citation only',
+  },
+  hughes1986: {
+    cite: 'Hughes, M. (1986). Children and Number: Difficulties in Learning Mathematics. Blackwell.',
+    url: 'https://nrich.maths.org/eyfs-activities/box-game',
+    found: 'In the "box task", 3- to 5-year-olds could often say how many bricks were in a box after some were added or removed, when the numbers were small (about 1 to 3), and did far better than on "what is 2 and 1?"',
+    caveat: 'The link is to NRICH\'s description of the box game, which cites the book.',
+    checked: 'citation only',
+  },
+  frydman1988: {
+    cite: 'Frydman, O., & Bryant, P. (1988). Sharing and the understanding of number equivalence by young children. Cognitive Development, 3(4), 323–339.',
+    url: 'https://www.sciencedirect.com/science/article/abs/pii/0885201488900196',
+    found: 'Four-year-olds shared things out equally by dealing them one at a time, though many did not yet realise that equal shares must contain the same number.',
+    caveat: 'The children were 4, so a younger child handing out handfuls is typical. Summary from memory of the paper, not re-read.',
+    checked: 'citation only',
+  },
+  rittle2013: {
+    cite: 'Rittle-Johnson, B., Fyfe, E. R., McLean, L. E., & McEldoon, K. L. (2013). Emerging understanding of patterning in 4-year-olds. Journal of Cognition and Development, 14(3), 376–396.',
+    url: 'https://doi.org/10.1080/15248372.2012.689897',
+    found: 'Among 66 four-year-olds, most could copy and continue a repeating pattern, some could rebuild it with different materials, and few could say which part repeats.',
+    caveat: 'Describes the order in which pattern skills appear at age 4. The pattern activities here follow that order.',
+    checked: 'read',
+  },
+  rittle2019: {
+    cite: 'Rittle-Johnson, B., Zippert, E. L., & Boice, K. L. (2019). The roles of patterning and spatial skills in early mathematics development. Early Childhood Research Quarterly, 46, 166–178.',
+    url: 'https://doi.org/10.1016/j.ecresq.2018.03.006',
+    found: 'In 73 pre-school children, skill with repeating patterns predicted maths knowledge seven months later, even allowing for how much maths they already knew.',
+    caveat: 'A link over seven months, not proof that practising patterns causes better maths.',
+    checked: 'read',
+  },
+  fyfe2015: {
+    cite: 'Fyfe, E. R., McNeil, N. M., & Rittle-Johnson, B. (2015). Easy as ABCABC: Abstract language facilitates performance on a concrete patterning task. Child Development, 86(3), 927–935.',
+    url: 'https://doi.org/10.1111/cdev.12331',
+    found: '62 children (average age 4.4) who heard patterns named with letters ("A, B, A, B") rebuilt them with new materials more successfully than children who heard colour names.',
+    caveat: 'One experiment with 4-year-olds.',
+    checked: 'read',
+  },
+  verdine2014: {
+    cite: 'Verdine, B. N., Golinkoff, R. M., Hirsh-Pasek, K., Newcombe, N. S., Filipowicz, A. T., & Chang, A. (2014). Deconstructing building blocks: Preschoolers\' spatial assembly performance relates to early mathematical skills. Child Development, 85(3), 1062–1076.',
+    url: 'https://doi.org/10.1111/cdev.12165',
+    found: 'In 102 three-year-olds, skill at copying a model made of interlocking bricks predicted how well they did on an early maths test taken at the same time.',
+    caveat: 'Measured at one moment, so it is a link. It does not show that practising copying improves maths.',
+    checked: 'read',
+  },
+  casey2008: {
+    cite: 'Casey, B. M., Andrews, N., Schindler, H., Kersh, J. E., Samper, A., & Copley, J. (2008). The development of spatial skills through interventions involving block building activities. Cognition and Instruction, 26(3), 269–309.',
+    url: 'https://doi.org/10.1080/07370000802177177',
+    found: 'Kindergarten children given a programme of block-building challenges improved their spatial skills compared with others, and setting the challenges inside a story gave the strongest result.',
+    caveat: 'The children were about 5 to 6.',
+    checked: 'read',
+  },
+  ferrara2011: {
+    cite: 'Ferrara, K., Hirsh-Pasek, K., Newcombe, N. S., Golinkoff, R. M., & Lam, W. S. (2011). Block talk: Spatial language during block play. Mind, Brain, and Education, 5(3), 143–151.',
+    url: 'https://doi.org/10.1111/j.1751-228X.2011.01122.x',
+    found: 'When parents and children built towards a goal, parents used a higher share of spatial words than in free play or with a ready-made model, and children used more spatial words than in free play.',
+    caveat: 'Measured the words used, not what children learned.',
+    checked: 'read',
+  },
+  pruden2011: {
+    cite: 'Pruden, S. M., Levine, S. C., & Huttenlocher, J. (2011). Children\'s spatial thinking: Does talk about the spatial world matter? Developmental Science, 14(6), 1417–1430.',
+    url: 'https://doi.org/10.1111/j.1467-7687.2011.01088.x',
+    found: 'In 52 families, parents who used more spatial words when children were 14 to 46 months had children who used more themselves, and those children did better on spatial tasks at 54 months.',
+    caveat: 'A link found by observing families, not an experiment.',
+    checked: 'read',
+  },
+  levine2012: {
+    cite: 'Levine, S. C., Ratliff, K. R., Huttenlocher, J., & Cannon, J. (2012). Early puzzle play: A predictor of preschoolers\' spatial transformation skill. Developmental Psychology, 48(2), 530–542.',
+    url: 'https://doi.org/10.1037/a0025913',
+    found: 'In 53 families, children seen playing with puzzles between 26 and 46 months did better on a mental-rotation style task at 54 months.',
+    caveat: 'A link found by observing families. Summary taken from the university\'s account, not the abstract.',
+    checked: 'citation only',
+  },
+  fisher2013: {
+    cite: 'Fisher, K. R., Hirsh-Pasek, K., Newcombe, N., & Golinkoff, R. M. (2013). Taking shape: Supporting preschoolers\' acquisition of geometric knowledge through guided play. Child Development, 84(6), 1872–1878.',
+    url: 'https://doi.org/10.1111/cdev.12091',
+    found: '70 children aged 4 to 5 who learned what defines a shape through guided play knew more a week later than those who had free play or were simply told.',
+    caveat: 'The children were 4 to 5.',
+    checked: 'read',
+  },
+  weisberg2013: {
+    cite: 'Weisberg, D. S., Hirsh-Pasek, K., & Golinkoff, R. M. (2013). Guided play: Where curricular goals meet a playful pedagogy. Mind, Brain, and Education, 7(2), 104–112.',
+    url: 'https://doi.org/10.1111/mbe.12015',
+    found: 'Defines guided play as the middle ground between free play and teaching: the adult sets up the goal and the materials, and the child leads what happens.',
+    caveat: 'A paper setting out an idea, not a study.',
+    checked: 'read',
+  },
+  skene2022: {
+    cite: 'Skene, K., O\'Farrelly, C. M., Byrne, E. M., Kirby, N., Stevens, E. C., & Ramchandani, P. G. (2022). Can guidance during play enhance children\'s learning and development in educational contexts? A systematic review and meta-analysis. Child Development, 93(4), 1162–1180.',
+    url: 'https://doi.org/10.1111/cdev.13730',
+    found: 'Pooling 17 studies (3,893 children, ages 1 to 8): guided play beat direct teaching for early maths skills, shape knowledge and switching between tasks, and beat free play for spatial vocabulary.',
+    caveat: 'No difference was found on other outcomes, and studies defined guided play in different ways. It does not show free play is worse in general.',
+    checked: 'read',
+  },
+  purpura2017: {
+    cite: 'Purpura, D. J., Napoli, A. R., Wehrspann, E. A., & Gold, Z. S. (2017). Causal connections between mathematical language and mathematical knowledge: A dialogic reading intervention. Journal of Research on Educational Effectiveness, 10(1), 116–137.',
+    url: 'https://doi.org/10.1080/19345747.2016.1204639',
+    found: '47 preschoolers were randomly given eight weeks of shared reading focused on maths words (more, fewer, before, after, near, far) or not. Those who had it did better on maths words and on maths itself.',
+    caveat: 'A small trial, delivered through picture books, not toy play.',
+    checked: 'read',
+  },
+  praise2013: {
+    cite: 'Gunderson, E. A., Gripshover, S. J., Romero, C., Dweck, C. S., Goldin-Meadow, S., & Levine, S. C. (2013). Parent praise to 1- to 3-year-olds predicts children\'s motivational frameworks 5 years later. Child Development, 84(5), 1526–1541.',
+    url: 'https://doi.org/10.1111/cdev.12064',
+    found: 'In 53 families, the more parents praised effort ("you worked hard on that") when children were 14 to 38 months, the more those children believed at age 7 to 8 that ability can grow.',
+    caveat: 'A link, not an experiment. It did not find that praising the child ("clever boy") did harm.',
+    checked: 'read',
+  },
+  hirshpasek2015: {
+    cite: 'Hirsh-Pasek, K., Zosh, J. M., Golinkoff, R. M., Gray, J. H., Robb, M. B., & Kaufman, J. (2015). Putting education in "educational" apps: Lessons from the science of learning. Psychological Science in the Public Interest, 16(1), 3–34.',
+    url: 'https://doi.org/10.1177/1529100615569721',
+    found: 'Argues that children learn best when they are active, engaged, doing something meaningful, and interacting with another person.',
+    caveat: 'A review and argument. It is why this app is a guide for the adult and the toys do the work.',
+    checked: 'read',
+  },
+  zosh2015: {
+    cite: 'Zosh, J. M., Verdine, B. N., Filipowicz, A., Golinkoff, R. M., Hirsh-Pasek, K., & Newcombe, N. S. (2015). Talking shape: Parental language with electronic versus traditional shape sorters. Mind, Brain, and Education, 9(3), 136–144.',
+    url: 'https://doi.org/10.1111/mbe.12082',
+    found: 'Parents used more spatial language, and more varied language overall, with a traditional shape sorter than with an electronic one.',
+    caveat: 'Measured the words parents used, not what children learned.',
+    checked: 'read',
+  },
+};
+
+// Things we looked for and could not support. Listed so nobody adds them back by accident.
+export const NOT_CLAIMED = [
+  'Numicon is widely used and the EEF names it as an example of a manipulative, but we found no independent trial showing it raises attainment. The one EEF project on it (2023–24) measured staff confidence, not children\'s learning. The Numicon activities here rest on the general case for hands-on objects.',
+  'There is no evidence-based number of minutes for an adult-led activity at this age. "Keep it short and stop when he loses interest" is practice advice, not a research finding.',
+  'Most studies here are with 3½- to 5-year-olds. None of them shows that starting earlier produces a lasting advantage.',
+];
