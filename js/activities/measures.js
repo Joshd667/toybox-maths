@@ -70,52 +70,6 @@ export default [
   }),
 
   A({
-    id: 'odd-one-out',
-    title: 'Odd one out',
-    strand: 'measures',
-    skill: 'Sorting',
-    needs: [],
-    toys: [],
-    minutes: 2,
-    research: ['ncetm', 'purpura2017'],
-    why: 'Finding the one that differs, and saying how, practises "same" and "different" with something to point at.',
-    make(r, level) {
-      const odd = r.int(0, 3);
-      let items;
-      let why;
-      if (level === 1) {
-        const [c1, c2] = r.sample(MORE_COLOURS, 2);
-        const mk = r.pick([car, cube, (c) => block('cube', c)]);
-        items = times(4, (i) => mk(i === odd ? c2 : c1));
-        why = `It is ${c2}. The others are all ${c1}.`;
-      } else if (level === 2) {
-        const animals = r.bool();
-        // Three different animals or three different colours of car, so no pair inside the group makes a second answer.
-        const kinds = r.sample(FARM, 4);
-        const cols = r.sample(MORE_COLOURS, 4);
-        items = times(4, (i) => ((i === odd) !== animals ? animal(kinds[i]) : car(cols[i])));
-        why = animals ? 'It is a car. The others are all animals, whatever their colour.' : 'It is an animal. The others are all cars, whatever their colour.';
-      } else {
-        const n = r.int(2, 4);
-        const m = n + (r.bool() ? 1 : -1);
-        items = times(4, (i) => dots(i === odd ? m : n, 'loose', r));
-        why = `It has ${m} ${m === 1 ? 'dot' : 'dots'}. The others all have ${n}, even though they are arranged differently.`;
-      }
-      return {
-        setup: [level === 3 ? 'Hold the phone where he can reach.' : 'Hold the phone where he can reach, or set up four real toys the same way.'],
-        scenes: [{ sprite: row(items.map((s, i) => hit(s, String(i))), { gap: level === 3 ? 6 : 14, align: 'middle' }) }],
-        ask: 'One of these is not like the others. Which one?',
-        answer: { type: 'tap', correct: [String(odd)] },
-        reveal: { caption: why },
-        look: ['Ask "how is it different?" every time. The reason matters more than the tap.'],
-        easier: lv(level, 'Use real toys: three the same and one very different, such as three cars and a spoon.', 'Three the same colour and one very different.'),
-        harder: 'Set up four toys where two answers could be right, and ask for both reasons.',
-        words: ['the same', 'different', 'odd one out', 'because'],
-      };
-    },
-  }),
-
-  A({
     id: 'order-size',
     title: 'Shortest to tallest',
     strand: 'measures',
@@ -146,44 +100,6 @@ export default [
         easier: lv(level, 'Just two towers. Which is taller?', 'Three towers that are very different heights.'),
         harder: 'Hand him one more tower and ask where it fits.',
         words: ['shortest', 'tallest', 'taller than', 'shorter than', 'in order'],
-      };
-    },
-  }),
-
-  A({
-    id: 'bricks-long',
-    title: 'How many bricks long?',
-    strand: 'measures',
-    skill: 'Measuring',
-    needs: ['Something to measure: a shoe, a spoon or a sofa cushion'],
-    toys: ['duplo', 'cubes'],
-    minutes: 5,
-    research: ['devmatters', 'ncetm'],
-    why: 'Measuring with a row of bricks is real measuring: same-size units, end to end, no gaps. Rulers come much later.',
-    make(r, level, ctx) {
-      const useCubes = has(ctx, 'cubes') && (!has(ctx, 'duplo') || r.bool(0.4));
-      const unit = useCubes ? 'cubes' : 'bricks';
-      const things = [
-        has(ctx, 'cars') && { name: 'a toy car', say: 'the car', s: car('red') },
-        has(ctx, 'brio') && { name: 'the engine and one wagon', say: 'the train', s: row([wagon(null, 'blue'), engine()], { gap: 1 }) },
-        { name: 'his shoe', say: 'your shoe', s: prop('shoe', 84, 26) },
-        { name: 'a spoon', say: 'the spoon', s: prop('spoon', 96, 14) },
-        level > 1 && { name: 'your foot', say: 'my foot', s: prop('foot', 120, 30) },
-        level === 3 && { name: 'the sofa cushion', say: 'the cushion', s: prop('cushion', 150, 30) },
-      ].filter(Boolean);
-      const { name: thing, say, s: thingPic } = r.pick(things);
-      const n = Math.max(2, Math.floor(thingPic.w / (useCubes ? 18 : 36)) - 1); // bricks laid so far: not quite enough
-      const line = useCubes ? rod(times(n, (i) => MORE_COLOURS[i % 6])) : row(times(n, (i) => duplo(BRICK_COLOURS[i % 4])), { gap: 0 });
-      return {
-        setup: [thing === 'your foot' ? 'Put your foot flat on the floor.' : `Lay ${thing} on the floor.`, `Have a pile of ${unit} that are all the same size.`],
-        scenes: [{ caption: 'Start level with one end. No gaps.', sprite: column([thingPic, row([line, qbox(30, 24)], { gap: 3, align: 'bottom' })], { gap: 5, align: 'left' }) }],
-        ask: level === 1 ? `Can you make a line of ${unit} as long as ${say}?` : `How many ${unit} long is ${say}?`,
-        ...(level > 1 ? { note: 'Ask for a guess first, then measure.' } : {}),
-        answer: { type: 'open' },
-        look: ['Does he start level with one end?', 'Does he leave gaps or overlaps? Slide them together and count again to show it changes the answer.'],
-        easier: 'Measure something short, and line the first brick up for him.',
-        harder: 'Measure two things and ask which is longer, and by how many.',
-        words: ['long', 'longer', 'shorter', 'end', 'how many', 'about'],
       };
     },
   }),
@@ -224,32 +140,6 @@ export default [
         easier: 'One wagon against three.',
         harder: lv(level, 'Push the shorter train forward so it pokes out in front.', 'Push the shorter train forward so it pokes out in front.', 'Park the trains far apart and ask how he could check.'),
         words: ['longer', 'shorter', 'line up', 'the same length'],
-      };
-    },
-  }),
-
-  A({
-    id: 'ramp-race',
-    title: 'Ramp race',
-    strand: 'measures',
-    skill: 'Measuring',
-    needs: ['A big book, tray or plank for the ramp', 'Three blocks or books to prop it up', 'Bricks or cubes to measure with'],
-    toys: ['cars'],
-    minutes: 8,
-    research: ['weisberg2013', 'devmatters'],
-    why: 'Guessing, testing and measuring how far a car rolls is guided play at its simplest: you set the question, he runs the experiment.',
-    make(r, level) {
-      const hs = lv(level, [1, 3], [1, 2], [1, 2, 3]);
-      return {
-        setup: ['Find something flat and stiff for a ramp: a big book, a tray, a plank.', `Prop one end on ${list(hs.map(String))} blocks in turn. Use the same car each time.`, 'Let go, do not push.'],
-        scenes: [{ sprite: row(hs.map((h, i) => ramp(h, 'red')), { gap: 16, align: 'bottom' }) }],
-        ask: level === 3 ? 'Which ramp will make the car roll furthest?' : 'Which ramp will make the car roll further?',
-        note: level === 1 ? 'Let him guess, then try it.' : 'Let him guess, then try it. Measure how far with a line of bricks.',
-        answer: { type: 'open' },
-        look: ['Does he make a guess before testing?', 'Does he want a second go to check? That is exactly what a scientist would do.', level > 1 ? 'Measure from the bottom of the ramp to the car with a line of bricks.' : 'Mark where the car stops with a brick.'],
-        easier: lv(level, 'Roll the car down one ramp a few times first, then make it higher.', 'Just a low ramp and a high ramp.'),
-        harder: 'Try a different car, or a carpet instead of a hard floor. What changes?',
-        words: ['further', 'steeper', 'higher', 'faster', 'how far'],
       };
     },
   }),

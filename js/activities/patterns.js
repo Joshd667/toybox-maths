@@ -171,37 +171,6 @@ export default [
   }),
 
   A({
-    id: 'pattern-missing',
-    title: 'Fill the gap',
-    strand: 'patterns',
-    skill: 'Spotting the rule',
-    needs: [],
-    toys: ALL,
-    minutes: 3,
-    research: ['rittle2013', 'devmatters'],
-    why: 'A gap in the middle means using the pattern on both sides, which is a step on from simply carrying on.',
-    make(r, level, ctx) {
-      const unit = r.pick(UNITS[level]);
-      const len = unit.length * 3;
-      const m = medium(r, ctx, len);
-      const seq = seqOf(unit, len);
-      const g = r.int(unit.length, len - 2);
-      const sample = m.el(0);
-      return {
-        setup: [`Lay out this row with ${m.things}, leaving a gap where the box is: ${seq.map((v, i) => (i === g ? '(gap)' : m.name(v))).join(', ')}.`],
-        scenes: [{ sprite: row(seq.map((v, i) => (i === g ? qbox(Math.max(22, sample.w), Math.max(22, sample.h)) : m.el(v))), { gap: 4, align: 'bottom' }) }],
-        ask: 'One piece is missing. Which one goes in the gap?',
-        answer: { type: 'pick', options: r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: m.el(i) })), correct: String(seq[g]) },
-        reveal: { caption: `${cap(an(m.full(seq[g])))}.`, sprite: line(m, seq, { wrap: (s, i) => (i === g ? ring(s) : s) }) },
-        look: ['Does he start from the beginning and read through the gap?'],
-        easier: 'Put the gap at the very end.',
-        harder: 'Leave two gaps.',
-        words: ['pattern', 'missing', 'before', 'after'],
-      };
-    },
-  }),
-
-  A({
     id: 'staircase',
     title: 'Staircase',
     strand: 'patterns',
@@ -317,37 +286,6 @@ export default [
         easier: 'Start the first two pieces for him.',
         harder: lv(level, 'Ask for a pattern with three things, or one where a colour comes twice.', 'Ask for a pattern with three things, or one where a colour comes twice.', 'Ask for a pattern where one thing comes twice in a row.'),
         words: ['pattern', 'repeat', 'my turn', 'your turn'],
-      };
-    },
-  }),
-  A({
-    id: 'pattern-train',
-    title: 'Pattern train',
-    strand: 'patterns',
-    skill: 'What comes next',
-    needs: ['Cubes or small bricks in three colours', 'Two spare wagons'],
-    toys: ['brio'],
-    minutes: 4,
-    research: ['rittle2013', 'devmatters'],
-    why: 'A row of wagons is a ready-made line for a repeating pattern, and adding the next wagon is continuing it.',
-    make(r, level) {
-      const unit = r.pick(UNITS[level]);
-      const len = lv(level, 4, unit.length + r.int(2, 3), unit.length + r.int(2, 3));
-      const cols = r.sample(MORE_COLOURS, 3);
-      const seq = seqOf(unit, len + 3);
-      const w = (v) => wagon(cube(cols[v]), 'blue');
-      const empty = wagon(qbox(22, 22), 'blue');
-      const pic = (shown, open) => onTrack(row([flip(engine()), ...seq.slice(0, shown).map(w), ...(open ? [empty] : [])], { gap: 1 }));
-      const opts = () => r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: cube(cols[i]) }));
-      const question = (shown, ask) => ({ ask, scenes: [{ sprite: pic(shown, true) }], answer: { type: 'pick', options: opts(), correct: String(seq[shown]) }, reveal: { caption: `${cap(cols[seq[shown]])}. The pattern goes ${unit.map((v) => cols[v]).join(', ')}, over and over.`, sprite: pic(shown + 1, false) } });
-      return {
-        setup: [`Hook ${len + 1} wagons behind the engine.`, `Load cubes or bricks from the engine backwards: ${seq.slice(0, len).map((v) => cols[v]).join(', ')}. Leave the last wagon empty.`],
-        ...question(len, 'What colour goes on the empty wagon?'),
-        more: [question(len + 1, 'Hook on another wagon. What colour goes on that one?'), question(len + 2, 'And the next one?')],
-        look: ['Does he say the colours aloud along the train to work it out?'],
-        easier: lv(level, 'Say the colours aloud along the train together first.', 'Two colours taking turns.'),
-        harder: 'Let him load a pattern train for you to finish.',
-        words: ['pattern', 'next', 'again', 'repeat'],
       };
     },
   }),

@@ -147,36 +147,6 @@ export default [
   }),
 
   A({
-    id: 'twin-towers',
-    title: 'Twin towers',
-    strand: 'adding',
-    skill: 'Adding more',
-    needs: [],
-    toys: ['duplo', 'cubes'],
-    minutes: 4,
-    research: ['devmatters', 'eef2020'],
-    why: 'Building the same again and counting the lot is a first taste of doubling, using a problem small enough to check by hand.',
-    make(r, level, ctx) {
-      const useCubes = has(ctx, 'cubes') && (!has(ctx, 'duplo') || r.bool(0.4));
-      const n = r.int(...lv(level, [1, 2], [2, 3], [3, 5]));
-      const [c1, c2] = r.sample(BRICK_COLOURS, 2);
-      const mk = (c) => (useCubes ? rod(times(n, () => c), true) : tower(times(n, () => c)));
-      return {
-        setup: [`Build a tower of ${n}. Ask him to build a twin that is exactly the same.`],
-        scenes: [{ sprite: row([mk(c1), mk(c2)], { gap: 26 }) }],
-        ask: `Two towers of ${n}. How many ${useCubes ? 'cubes' : 'bricks'} is that altogether?`,
-        answer: { type: 'number', value: n * 2, choices: choices(r, n * 2, { min: 1 }) },
-        reveal: { caption: `${n} and ${n} make ${n * 2}. Stack one on the other and count.`, sprite: useCubes ? rod([...times(n, () => c1), ...times(n, () => c2)], true) : tower([...times(n, () => c1), ...times(n, () => c2)]) },
-        more: [numQ(r, 'Take one off. How many now?', n * 2 - 1)],
-        look: ['Does he count every brick from 1, or carry on from the first tower?'],
-        easier: lv(level, 'Build both towers yourself, then count together.', 'Towers of 1 or 2.'),
-        harder: 'Make three towers the same.',
-        words: ['the same', 'altogether', 'double'],
-      };
-    },
-  }),
-
-  A({
     id: 'two-colours',
     title: 'Two colours, one tower',
     strand: 'adding',
@@ -211,33 +181,4 @@ export default [
     },
   }),
 
-  A({
-    id: 'wagons-join',
-    title: 'Hook them on',
-    strand: 'adding',
-    skill: 'Adding more',
-    needs: [],
-    toys: ['brio'],
-    minutes: 4,
-    research: ['devmatters', 'gunderson2011'],
-    why: 'Joining two short trains is adding he can see and check, with the "first, then, now" story built in.',
-    make(r, level) {
-      const total = r.int(...lv(level, [2, 3], [3, 5], [4, 6]));
-      const b = r.int(1, Math.min(lv(level, 1, 2, 3), total - 1));
-      const a = total - b;
-      const w = (c) => wagon(cube('yellow'), c);
-      return {
-        setup: [`Hook ${plural(a, 'wagon', 'wagons')} to the engine.`, `Park ${plural(b, 'more wagon', 'more wagons')} further down the track.`],
-        scenes: [{ sprite: onTrack(row([row(times(b, () => w('green')), { gap: 1 }), arrow(24), row([...times(a, () => w('blue')), engine()], { gap: 1 })], { gap: 10, align: 'bottom' })) }],
-        ask: `The engine has ${a}. If it picks up ${b} more, how many wagons will it be pulling?`,
-        answer: { type: 'number', value: total, choices: choices(r, total, { min: 1 }) },
-        reveal: { caption: `${a} and ${b} more makes ${total}. Hook them on and count.`, sprite: train([...times(a, () => w('blue')), ...times(b, () => w('green'))]) },
-        more: [numQ(r, 'One wagon gets left at the station. How many now?', total - 1)],
-        look: ['Does he guess before joining them, or wait and count? Encourage a guess first.'],
-        easier: lv(level, 'Hook them on first, then count together.', 'One wagon and one more.'),
-        harder: 'Unhook some instead: "the engine leaves 2 behind".',
-        words: ['first', 'then', 'now', 'more', 'altogether'],
-      };
-    },
-  }),
 ];

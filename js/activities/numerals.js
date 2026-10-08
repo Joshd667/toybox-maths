@@ -129,32 +129,6 @@ export default [
   }),
 
   A({
-    id: 'number-hunt',
-    title: 'Number hunt',
-    strand: 'numerals',
-    skill: 'Reading numbers',
-    needs: [],
-    toys: [],
-    minutes: 5,
-    research: ['eef2020', 'levine2010'],
-    why: 'Maths talk that happens through the day, not just at a set time, is one of the main early-years recommendations.',
-    make(r, level) {
-      const n = r.int(...lv(level, [1, 5], [0, 9], [10, 20]));
-      const places = r.sample(level === 3 ? ['a calendar', 'a book page', 'a ruler or tape measure'] : ['a clock', 'the TV remote', 'the front door', 'a book page', 'the oven', 'a calendar', 'a ruler or tape measure', 'a phone keypad', 'a car number plate'], 3);
-      return {
-        setup: ['Show him the number, then go looking around the house together.', `Good places to try: ${places.join(', ')}.`],
-        scenes: [{ sprite: card(n, 96) }],
-        ask: `This is ${n}. Can we find the number ${n} somewhere in the house?`,
-        answer: { type: 'open' },
-        look: ['Does he recognise it when it is a different size, colour or style?'],
-        easier: 'Hunt for 1, 2 or 3.',
-        harder: 'Hunt for two numbers at once, or for his age.',
-        words: ['number', 'the same'],
-      };
-    },
-  }),
-
-  A({
     id: 'tower-labels',
     title: 'Which tower?',
     strand: 'numerals',
@@ -218,36 +192,6 @@ export default [
         easier: lv(level, 'Use 1, 2 and 3 and hide the last card.', 'Use 1 to 4 and hide the last card.'),
         harder: 'Hide two cards.',
         words: ['before', 'after', 'next', 'between'],
-      };
-    },
-  }),
-
-  A({
-    id: 'next-number',
-    title: 'What comes next?',
-    strand: 'numerals',
-    skill: 'Number order',
-    needs: [],
-    toys: [],
-    minutes: 2,
-    research: ['sarnecka2008', 'purpura2017'],
-    why: '"After" and "before" are maths words, and knowing what comes next is the start of adding one.',
-    make(r, level) {
-      const before = level === 3 && r.bool(0.4);
-      const n = r.int(...lv(level, [1, 4], [4, 9], [9, 19]));
-      const value = before ? n - 1 : n + 1;
-      const pic = (k) => ({ sprite: before ? row([qbox(54, 76), card(k, 76)], { gap: 8 }) : row([card(k, 76), qbox(54, 76)], { gap: 8 }) });
-      return {
-        setup: ['Show him the number.'],
-        scenes: [pic(n)],
-        ask: before ? `This is ${n}. What number comes just before ${n}?` : `This is ${n}. What number comes after ${n}?`,
-        answer: { type: 'number', value, choices: choices(r, value, { min: 0 }) },
-        reveal: { caption: `${value}. Count up to it together.`, sprite: row(times(3, (i) => card(Math.max(0, Math.min(n, value) - 1) + i, 54)), { gap: 5 }) },
-        more: (before ? [numQ(r, `And what comes just before ${value}?`, value - 1)] : value < 20 ? [numQ(r, `And what comes after ${value}?`, value + 1)] : []).map((q) => ({ ...q, scenes: [pic(value)] })),
-        look: ['Does he need to count from 1 to get there? That is fine, and it will speed up.'],
-        easier: lv(level, 'Stay with 1, 2 and 3.', 'Stay below 5.', 'Stay below 10.'),
-        harder: lv(level, 'Ask for the number before.', 'Ask for the number before.', 'Ask without showing him the number.'),
-        words: ['after', 'before', 'next'],
       };
     },
   }),
