@@ -94,7 +94,7 @@ A new animal needs those parts too, or it will dance as a stiff cut-out.
 
 ## Ages
 
-Every activity has an `age` of 2.5, 3 or 4, shown in the lists as "from 3" and on the Get ready screen.
+Every activity has an `age` of 2.5, 3 or 4, shown as an "Age 3+" label on each row of the lists and at the top of the Get ready screen.
 A child's profile can hold a month of birth (`born: 'YYYY-MM'`, optional, typed in on the phone and saved only there).
 `ageOf()` in `store.js` rounds the child's age to the nearest half year; `later(a)` says an activity is aimed at someone older.
 

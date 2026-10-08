@@ -149,7 +149,7 @@ function list(kind, id) {
     const last = store.actState(a.id).last;
     return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
       <span class="li-title">${esc(a.title)}</span>
-      <span class="li-meta">${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')} · from ${ageWord(a.age)}</span>
+      <span class="li-meta"><b class="age">Age ${ageWord(a.age)}+</b>${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
       ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
     </a></li>`;
   };
@@ -295,7 +295,7 @@ function readyScreen() {
   const choose = toys.length > 1;
   return `${playTop()}
   <section class="page stage ready">
-    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span><span class="from">From about ${ageWord(a.age)}</span></p>
+    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span><b class="age">Age ${ageWord(a.age)}+</b></p>
     <div class="card eg">
       <h2>The game</h2>
       ${egPic ? `<figure class="fig">${render(egPic.sprite, { label: 'Example set-up' })}</figure>` : ''}

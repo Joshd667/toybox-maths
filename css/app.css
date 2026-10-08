@@ -178,8 +178,10 @@ button { cursor: pointer; touch-action: manipulation; }
   padding: 13px 14px 13px 20px; min-height: 64px; background: var(--surface); border-radius: 16px; text-decoration: none;
 }
 .li-title { font-family: var(--display); font-weight: 500; font-size: 19px; line-height: 1.2; }
-.li-meta { grid-column: 1; font-size: 14px; color: var(--muted); }
+.li-meta { grid-column: 1; margin-top: 4px; font-size: 14px; color: var(--muted); }
 .list .badge { grid-column: 2; grid-row: 1 / span 2; }
+.age { display: inline-block; margin-right: 8px; padding: 1px 9px; border-radius: 999px; border: 1.5px solid var(--ink); color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; }
+.tagline .age { margin: 0; font-size: 14px; padding: 2px 11px; }
 .group-note { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
 .list.later a { background: none; border: 2px dashed var(--line); }
 
@@ -201,8 +203,6 @@ button { cursor: pointer; touch-action: manipulation; }
 
 /* get ready: what you need, how hard, how many */
 .tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; font-size: 16px; }
-.tagline .from { color: var(--muted); font-size: 14px; }
-.tagline .from::before { content: '· '; }
 .pill { padding: 3px 12px; border-radius: 999px; background: var(--c); color: #fff; font-weight: 700; font-size: 14px; }
 .card { background: var(--surface); border-radius: 20px; padding: 16px; margin-top: 12px; }
 .card h2 { margin: 0 0 12px; }
