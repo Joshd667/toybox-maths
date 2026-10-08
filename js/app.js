@@ -70,7 +70,7 @@ function topBar(title, back) {
 }
 
 // ---------------------------------------------------------------- home
-let homeMode = 'toy';
+let homeMode = 'skill';
 function home() {
   const tiles =
     homeMode === 'toy'
@@ -86,8 +86,8 @@ function home() {
   <section class="page">
     <button class="go" data-act="surprise">${icon.dice}<span>Just pick one</span></button>
     <div class="seg wide" role="group" aria-label="Browse">
-      <button data-act="home-mode" data-v="toy" aria-pressed="${homeMode === 'toy'}">By toy</button>
       <button data-act="home-mode" data-v="skill" aria-pressed="${homeMode === 'skill'}">By skill</button>
+      <button data-act="home-mode" data-v="toy" aria-pressed="${homeMode === 'toy'}">By toy</button>
     </div>
     ${tiles}
   </section>`;
@@ -102,7 +102,7 @@ function list(kind, id) {
   if (!title) return null;
   // Chips filter by the other thing: skills when looking at a toy, toys when looking at a skill.
   const chips = isToy
-    ? STRANDS.filter((s) => all.some((a) => a.strand === s.id)).map((s) => ({ id: s.id, name: s.name }))
+    ? STRANDS.filter((s) => all.some((a) => a.strand === s.id)).map((s) => ({ id: s.id, name: s.name, colour: s.colour }))
     : toyTiles().filter((t) => all.some((a) => (t.id === 'none' ? a.toys.length === 0 : a.toys.includes(t.id)))).map((t) => ({ id: t.id, name: t.name }));
   if (!chips.some((c) => c.id === listFilter)) listFilter = null;
   const shown = all.filter((a) => !listFilter || (isToy ? a.strand === listFilter : listFilter === 'none' ? a.toys.length === 0 : a.toys.includes(listFilter)));
@@ -110,7 +110,7 @@ function list(kind, id) {
   const item = (a) => {
     const s = strandOf(a);
     const last = store.actState(a.id).last;
-    return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" style="--c:${s.colour}">
+    return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
       <span class="li-title">${esc(a.title)}</span>
       <span class="li-meta">${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
       ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
@@ -123,12 +123,12 @@ function list(kind, id) {
     <button class="go small" data-act="pick-here">${icon.dice}<span>Pick one of these</span></button>
     <div class="chips" role="group" aria-label="Filter">
       <button class="chip" data-act="filter" data-v="" aria-pressed="${!listFilter}">All</button>
-      ${chips.map((c) => `<button class="chip" data-act="filter" data-v="${c.id}" aria-pressed="${listFilter === c.id}">${esc(c.name)}</button>`).join('')}
+      ${chips.map((c) => `<button class="chip${c.colour ? ' tint' : ' with-pic'}" ${c.colour ? `style="--c:${c.colour}"` : ''} data-act="filter" data-v="${c.id}" aria-pressed="${listFilter === c.id}">${c.colour ? '' : `<span class="chip-pic">${pic(toyArt[c.id]())}</span>`}${esc(c.name)}</button>`).join('')}
     </div>
     ${groups.map(([name, acts]) => `${name ? `<h2 class="group">${esc(name)}</h2>` : ''}<ul class="list">${acts.map(item).join('')}</ul>`).join('')}
   </section>`;
 }
-const shownIds = () => [...document.querySelectorAll('.list a')].map((el) => el.getAttribute('href').split('/')[2]);
+const shownIds = () => [...document.querySelectorAll('.list a')].map((el) => el.dataset.id);
 
 // ---------------------------------------------------------------- playing an activity
 // A turn goes: Get ready (what you need, how hard, how many) -> Start -> set-up -> questions -> done.
@@ -168,9 +168,9 @@ function levelAt(q) {
   return Number(flow.mode);
 }
 // Lay out a fresh set-up: new numbers, colours and questions.
-function deal(level = levelAt(flow.q)) {
+function deal(level = levelAt(flow.q), seed = newSeed()) {
   flow.level = level;
-  flow.seed = newSeed();
+  flow.seed = seed;
   flow.inst = flow.a.make(makeRng(flow.seed), level, { toys: flow.toy ? [flow.toy] : owned() });
   flow.qs = [flow.inst, ...(flow.inst.more || [])];
   flow.qi = 0;
@@ -193,6 +193,8 @@ function startActivity(id, toy) {
     flow = {
       a,
       toy: a.toys.includes(toy) ? toy : mine[0] || a.toys[0] || '',
+      viaToy: a.toys.includes(toy), // opened from a toy's list, so the toy is already decided
+      eg: newSeed(), // the example on the Get ready screen; it becomes the first set-up
       mode: store.suggest(a, modesOf(a)),
       n: counts.includes(saved) ? saved : counts[0],
       stage: 'ready',
@@ -230,7 +232,11 @@ function scenePic(sc) {
 const seg = (act, items, current, cls = '') =>
   `<div class="seg wide ${cls}" role="group">${items.map(([v, label]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${String(v) === String(current)}">${label}</button>`).join('')}</div>`;
 
-// The first screen of a turn: what to fetch, how hard, how many.
+// The difficulty the first set-up will have (Mix and Ramp up both open on the easiest).
+const firstLevel = () => (LEVEL[flow.mode] ? Number(flow.mode) : levelsOf(flow.a)[0]);
+const HOW = { number: 'He taps the number.', pick: 'He picks one.', tap: 'He taps the picture.', do: 'He does it with the toys. You tap Did it.', open: 'He does it with the toys. There is no wrong answer.', spinner: 'He spins, then moves.' };
+
+// The first screen of a turn: what the game is, what to fetch, how hard, how many.
 function readyScreen() {
   const { a } = flow;
   const s = strandOf(a);
@@ -239,15 +245,29 @@ function readyScreen() {
   const modes = modesOf(a);
   const last = store.actState(a.id).last;
   const lastMode = last && MODE[last.mode ?? last.level];
-  const needs = [...(toys.length === 1 ? [esc(toyName(toys[0]))] : []), ...a.needs.map(w)];
-  if (!toys.length && !needs.length) needs.push('Just this phone');
+  // An example of the game, drawn for the toy and difficulty chosen below. Start opens on this same set-up.
+  const eg = a.make(makeRng(flow.eg), firstLevel(), { toys: flow.toy ? [flow.toy] : owned() });
+  const egPic = eg.scenes[0];
+  const needs = [...(flow.toy ? [esc(toyName(flow.toy))] : []), ...a.needs.map(w)];
+  if (!needs.length) needs.push('Just this phone');
+  const toyChips = `<div class="own">${toys.map((t) => `<button class="chip with-pic" data-act="toy" data-v="${t}" aria-pressed="${t === flow.toy}"><span class="chip-pic">${pic(toyArt[t]())}</span>${esc(toyName(t))}</button>`).join('')}</div>`;
+  const choose = toys.length > 1;
   return `${playTop()}
   <section class="page stage ready">
     <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span></p>
+    <div class="card eg">
+      <h2>The game</h2>
+      ${egPic ? `<figure class="fig">${render(egPic.sprite, { label: 'Example set-up' })}</figure>` : ''}
+      <dl>
+        <dt>You set up</dt><dd>${eg.setup.map(w).join(' ')}</dd>
+        <dt>You ask</dt><dd class="eg-ask">“${w(eg.ask)}”</dd>
+        <dt>He answers</dt><dd>${w(HOW[eg.answer.type])}</dd>
+      </dl>
+    </div>
+    ${choose && !flow.viaToy ? `<div class="card"><h2>Which toy will you use?</h2><p class="card-note">Any one of these works.</p>${toyChips}</div>` : ''}
     <div class="card">
       <h2>You need</h2>
-      ${toys.length > 1 ? `<p class="card-note">One of these. Tap the one you have out.</p><div class="own">${toys.map((t) => `<button class="chip" data-act="toy" data-v="${t}" aria-pressed="${t === flow.toy}">${esc(toyName(t))}</button>`).join('')}</div>` : ''}
-${needs.length ? `<ul class="needs">${needs.map((t) => `<li>${t}</li>`).join('')}</ul>` : ''}
+      <ul class="needs">${needs.map((t) => `<li>${t}</li>`).join('')}</ul>
     </div>
     <div class="card">
       <h2>How hard?</h2>
@@ -260,6 +280,7 @@ ${needs.length ? `<ul class="needs">${needs.map((t) => `<li>${t}</li>`).join('')
       ${seg('count', countsOf(a).map((n) => [n, n]), flow.n)}
       ${isBuild(a) ? '<p class="card-note">Each go is a fresh build, so one is plenty.</p>' : ''}
     </div>
+    ${choose && flow.viaToy ? `<details class="card swap" ${flow.swapOpen ? 'open' : ''}><summary data-act="swap">Got a different toy out?</summary><p class="card-note">This game also works with these.</p>${toyChips}</details>` : ''}
   </section>
   <footer class="bar"><button class="btn primary big" data-act="start">Start</button></footer>`;
 }
@@ -269,12 +290,12 @@ function setupScreen() {
   const pics = inst.scenes.filter((s) => !s.flash);
   return `${playTop()}
   <section class="page stage">
-    <p class="kicker">${flow.setups > 1 ? 'New set-up' : 'Set up'}</p>
+    <div class="phase p-setup"><b>${flow.setups > 1 ? 'New set-up' : 'Set up'}</b><span>For you. Lay this out, then tap the button.</span></div>
     ${pics.map(scenePic).join('')}
     <ul class="setup">${inst.setup.map((t) => `<li>${w(t)}</li>`).join('')}</ul>
     <div class="controls"><button class="btn slim" data-act="shuffle">${icon.dice} Different numbers</button></div>
   </section>
-  <footer class="bar"><button class="btn primary big" data-act="ready">Ready</button></footer>`;
+  <footer class="bar"><button class="btn primary big" data-act="ready">It is set up. Ask him</button></footer>`;
 }
 
 function answerArea(ans) {
@@ -293,6 +314,7 @@ function askScreen() {
   const hands = ['do', 'open', 'spinner'].includes(q.answer.type); // answered with the toys, not the screen
   return `${playTop()}
   <section class="page stage">
+    <div class="phase p-ask"><b>Ask</b><span>Read this out loud.</span></div>
     ${q.note ? `<p class="note"><b>You</b> ${w(q.note)}</p>` : ''}
     <p class="say">${w(q.ask)}</p>
     ${scenes.map(scenePic).join('')}
@@ -639,9 +661,13 @@ function onTap(el, e) {
     if (act === 'count') flow.n = Number(v);
     return draw(true);
   }
+  if (act === 'swap') {
+    flow.swapOpen = !flow.swapOpen; // remember it, so choosing a toy does not fold the menu away
+    return;
+  }
   if (act === 'start') {
     store.set(isBuild(flow.a) ? 'goes' : 'questions', flow.n);
-    deal();
+    deal(firstLevel(), flow.eg);
     return draw(false);
   }
   if (act === 'shuffle') {

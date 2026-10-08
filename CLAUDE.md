@@ -98,11 +98,13 @@ Draw generic toys only: no branded characters or copies of a product's own artwo
 
 ## How a turn works
 
-1. **Get ready** (`readyScreen` in `app.js`): what you need (toy chips plus `needs`), how hard, how many questions.
+1. **Get ready** (`readyScreen` in `app.js`): "The game" (an example picture, what you set up, what you ask, how he answers;
+   Start opens on that same set-up), what you need, how hard, how many questions. Opened from a skill, it asks which toy;
+   opened from a toy's list, that toy is taken as given and a folded "Got a different toy out?" menu sits at the end.
    Difficulty is Easy, Medium, Hard, Mix (a different one for each set-up) or Ramp up (easy at the start, hard by the end).
    Questions are 3, 5, 8 or 10. Long builds with one question per set-up (`isBuild`) are counted in goes: 1, 2 or 3.
-2. **Start**, then for each set-up: the set-up screen (picture and lines, Ready), then its questions one per screen
-   (the main one, then its `more` follow-ups). When a set-up runs out, or Ramp up moves to the next difficulty, a new one is dealt.
+2. **Start**, then for each set-up: the set-up screen (orange "Set up" banner, for the adult), then its questions one per screen, each under a purple "Ask" banner. Keep the two looking different: the owner could not tell them apart before.
+   The questions are the main one, then its `more` follow-ups. When a set-up runs out, or Ramp up moves to the next difficulty, a new one is dealt.
    The header always says "Question 2 of 5". It stops at the number asked for, even part-way through a set-up's follow-ups.
 3. **Stars**: one slot per question. A right answer (or Did it) fills it. Show the answer and Skip leave it empty. Nothing is taken away.
 4. **Done**: stars out of questions, then the adult taps Too easy / Just right / Too tricky / Not today.

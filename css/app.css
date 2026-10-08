@@ -131,6 +131,13 @@ button { cursor: pointer; touch-action: manipulation; }
 .chip { flex: none; min-height: 40px; padding: 6px 14px; border-radius: 999px; background: var(--surface); border: 2px solid var(--line); font-size: 15px; white-space: nowrap; }
 .chip[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--bg); font-weight: 700; }
 
+/* a chip with a little picture of the toy, and a chip tinted with a skill's colour */
+.chip.with-pic { display: inline-flex; align-items: center; gap: 8px; padding-left: 6px; }
+.chip-pic { width: 40px; height: 28px; flex: none; display: grid; place-items: center; border-radius: 999px; background: var(--mat); padding: 4px 6px; }
+.chip-pic svg { max-width: 100%; max-height: 100%; width: auto; height: auto; display: block; }
+.chip.tint { border-color: var(--c); background: color-mix(in srgb, var(--c) 14%, var(--surface)); }
+.chip.tint[aria-pressed='true'] { background: var(--c); border-color: var(--c); color: #fff; }
+
 .badge { font-size: 13px; font-weight: 700; padding: 3px 9px; border-radius: 999px; background: var(--line); color: var(--ink); white-space: nowrap; }
 .badge.r-new { background: none; color: var(--muted); border: 1.5px solid var(--line); }
 .badge.r-easy { background: var(--easy); color: #fff; }
@@ -192,8 +199,26 @@ button { cursor: pointer; touch-action: manipulation; }
 .card .seg.second { margin-top: 8px; }
 .card-note { color: var(--muted); font-size: 15px; margin: 12px 0 0; }
 .card h2 + .card-note { margin: -6px 0 12px; }
+/* the example of the game */
+.eg .fig { margin: 0 0 14px; }
+.eg .scene { max-height: 20vh; }
+.eg dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 12px; align-items: baseline; }
+.eg dt { font-size: 14px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+.eg dd { margin: 0; }
+.eg-ask { font-family: var(--display); font-weight: 600; font-size: 19px; line-height: 1.25; }
+.card .own { margin-top: 12px; }
+.swap summary { font-family: var(--display); font-weight: 500; font-size: 17px; cursor: pointer; }
+.swap[open] summary { margin-bottom: 4px; }
+
+/* which part of the turn this screen is: setting up (for the adult) or asking (read aloud) */
+.phase { display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; border-radius: 14px; margin: 4px 0 14px; font-size: 15px; }
+.phase b { font-family: var(--display); font-weight: 600; font-size: 15px; padding: 4px 12px; border-radius: 999px; color: #fff; white-space: nowrap; }
+.p-setup { background: color-mix(in srgb, var(--hard) 14%, var(--surface)); }
+.p-setup b { background: var(--hard); }
+.p-ask { background: color-mix(in srgb, var(--accent) 14%, var(--surface)); }
+.p-ask b { background: var(--accent); color: var(--accent-ink); }
+
 .needs { margin: 0; padding-left: 22px; font-size: 18px; display: grid; gap: 6px; }
-.own + .needs { margin-top: 14px; }
 .needs li::marker { color: var(--accent); }
 .setup { margin: 16px 0 0; padding-left: 22px; font-size: 18px; }
 .setup li { margin: 6px 0; }
