@@ -13,9 +13,11 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `css/app.css` | All styling. Colours and fonts are variables at the top. |
 | `js/app.js` | The screens and all tap handling. Routes are listed at the top of the file. |
 | `js/store.js` | Children's profiles and progress (saved on the phone), and how the next activity is chosen. |
-| `js/reward.js` | Stars, the dancing animal and the chime when he gets one right. |
+| `js/reward.js` | Stars, the dancing animal and the chime when he gets one right. Picks which of the three dances plays. |
 | `js/wording.js` | Rewrites "he" text as "she" for a child's profile. |
 | `js/draw.js` | Every picture. Toy "sprites" plus layout helpers. Pure functions, no DOM. |
+| `js/animals.js` | The animal and rabbit drawings (used through `draw.js`). Each has named moving parts for the dance. |
+| `js/brand.js` | The toy box logo: the home-screen icon and the small logo beside the app's name. |
 | `js/rng.js` | Seeded random numbers, so every variation can be reproduced and tested. |
 | `js/research.js` | Every source cited, with what it found and what it does not show. |
 | `js/activities/index.js` | List of strands, toys, and all activities. |
@@ -24,7 +26,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `sw.js` | Offline support. Has a list of every file. |
 | `tools/validate.mjs` | The test. Run before every commit. |
 | `tools/sheet.mjs` | Review sheets: one page per activity with two variations at each difficulty. Use it to check words, pictures and answers agree. |
-| `tools/make-icons.py` | Rebuilds the icons (needs Playwright). |
+| `tools/make-icons.mjs` | Rebuilds the files in `icons/` from `js/brand.js` (needs Playwright). Run it after changing the logo. |
 
 ## Adding an activity
 
@@ -73,6 +75,12 @@ Compose these; do not write raw SVG in activity files. If a new toy is needed, a
 Keep pictures under about 500 units wide. Use colour names from `PAL` so the words and the picture always agree.
 Draw generic toys only: no branded characters or copies of a product's own artwork.
 
+Animals are drawn in `js/animals.js` at four times their sprite size and scaled down. Keep each animal's sprite size
+(`make(58, 46, ...)`) the same when redrawing, or activity layouts shift. Head, tail, legs, ears, eyes (and the duck's wing,
+the elephant's trunk) are wrapped with `part(name, x, y, ...)`, where x, y is the point the part turns about. They stay still
+in activity pictures; the "dancing parts" rules in `css/app.css` move them in the reward and on the finish screen.
+A new animal needs those parts too, or it will dance as a stiff cut-out.
+
 ## Research rules (the owner cares about this most)
 
 - Every activity must cite at least one entry in `js/research.js`, and `why` must not claim more than that entry's `found` line.
@@ -95,6 +103,8 @@ Draw generic toys only: no branded characters or copies of a product's own artwo
 - The toys do the teaching. Do not turn activities into screen games; tapping is for answers only.
 - The adult is stressed and wants an activity in ten seconds. One thing per screen, big buttons, no scrolling to find the next step.
 - This is not a toy maker's app. No brick-shaped headers, studs, or brand colours in the interface. Toys appear only in the pictures.
+  The logo is a smiling toy box with plain number blocks (1, 2, 3) jumping out; keep the blocks plain.
+- Animation can be switched off in Settings (and the phone's reduce-motion setting is respected): the animal then appears standing still.
 
 ## How a turn works
 

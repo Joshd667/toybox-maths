@@ -14,6 +14,7 @@ import * as D from './draw.js';
 import * as store from './store.js';
 import { celebrate, finale, hush } from './reward.js';
 import { reword } from './wording.js';
+import { logo } from './brand.js';
 
 const { render, numeral } = D;
 const view = document.getElementById('view');
@@ -59,12 +60,15 @@ const icon = {
   star: (on, now) => `<svg class="star${on ? ' on' : ''}${now ? ' now' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z"/></svg>`,
 };
 
-// The bar at the top of the browsing screens: where you are, and who is playing.
+// The app's name with its toy box, for the top of the home screen.
+const BRAND = `<h1 class="brand" aria-label="Toybox Maths">${logo()}<span>Toybox</span> <b>Maths</b></h1>`;
+
+// The bar at the top of the browsing screens: where you are (no title means the home screen), and who is playing.
 function topBar(title, back) {
   const c = store.child();
   return `<header class="top">
     ${back ? `<a class="round" href="${back}" aria-label="Back">${icon.back}</a>` : ''}
-    <h1>${esc(title)}</h1>
+    ${title ? `<h1>${esc(title)}</h1>` : BRAND}
     <a class="who" href="#/who" aria-label="Playing: ${esc(c.name)}. Change child"><span class="avatar">${mascot(c)}</span><span>${esc(c.name)}</span></a>
   </header>`;
 }
@@ -82,7 +86,7 @@ function home() {
           const n = forSkill(s.id).length;
           return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${n} ${n === 1 ? 'activity' : 'activities'}: ${esc(subSkills(s.id).join(', ').toLowerCase())}</span></a>`;
         }).join('')}</div>`;
-  return `${topBar('Toybox Maths')}
+  return `${topBar('')}
   <section class="page">
     <button class="go" data-act="surprise">${icon.dice}<span>Just pick one</span></button>
     <div class="seg wide" role="group" aria-label="Browse">
@@ -436,7 +440,7 @@ function who() {
   const firstRun = !kids.length;
   const used = kids.map((k) => k.animal);
   if (!pickedMascot || !MASCOTS.includes(pickedMascot)) pickedMascot = MASCOTS.find((m) => !used.includes(m)) || MASCOTS[0];
-  return `${firstRun ? '<header class="top"><h1>Toybox Maths</h1></header>' : `<header class="top"><a class="round" href="#/" aria-label="Back">${icon.back}</a><h1>Who is playing?</h1></header>`}
+  return `${firstRun ? `<header class="top">${BRAND}</header>` : `<header class="top"><a class="round" href="#/" aria-label="Back">${icon.back}</a><h1>Who is playing?</h1></header>`}
   <section class="page">
     ${firstRun ? '<p class="say">Who is playing?</p><p class="lede">Add each child once. Their progress and stars are kept separately, on this phone only.</p>' : ''}
     ${kids.length ? `<ul class="kids">${kids

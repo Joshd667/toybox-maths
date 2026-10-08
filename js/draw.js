@@ -5,6 +5,8 @@
 // take sprites and return a bigger sprite. render() turns a sprite into an <svg>.
 // Nothing here touches the DOM, so it runs in Node for tools/validate.mjs too.
 
+import { ANIMAL, bunny as toyBunny } from './animals.js';
+
 const R = (n) => Math.round(n * 10) / 10;
 
 export const INK = '#22304F';
@@ -227,145 +229,11 @@ export function car(colour) {
 }
 
 // ---------------------------------------------------------------- animals
-const OL = 'stroke="#3A3A40" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"';
-const eye = (x, y) => `<circle cx="${x}" cy="${y}" r="1.3" fill="#2B2B2B"/>`;
-const legs = (xs, y, h, w, c) => xs.map((x) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="${w / 2.5}" fill="${c}" ${OL}/>`).join('');
-
-const ANIMAL = {
-  cow: () =>
-    sp(
-      58,
-      46,
-      `<path d="M9 22q-6 4-4 13" fill="none" ${OL}/>` +
-        legs([12, 20, 35, 43], 30, 15.5, 5, '#F7F5EE') +
-        `<ellipse cx="28" cy="25" rx="20" ry="11" fill="#F7F5EE" ${OL}/>` +
-        `<ellipse cx="21" cy="22" rx="6.5" ry="4.5" fill="#33333A"/><ellipse cx="35" cy="29" rx="5" ry="3.5" fill="#33333A"/>` +
-        `<path d="M42 9l-2-5M51 9l2-5" fill="none" ${OL}/><ellipse cx="40" cy="12" rx="3.5" ry="2" fill="#33333A"/>` +
-        `<ellipse cx="47" cy="16" rx="8" ry="7.5" fill="#F7F5EE" ${OL}/><ellipse cx="51" cy="20" rx="5" ry="3.8" fill="#F3B3BD" ${OL}/>` +
-        eye(46, 14)
-    ),
-  pig: () =>
-    sp(
-      56,
-      40,
-      `<path d="M8 20c-5-2-5 4-1 3s1-5-2-3" fill="none" ${OL}/>` +
-        legs([13, 20, 33, 40], 28, 11.5, 5, '#F3A1B5') +
-        `<ellipse cx="27" cy="22" rx="19" ry="12" fill="#F6B2C3" ${OL}/>` +
-        `<path d="M38 8l2-6 5 5Z" fill="#F3A1B5" ${OL}/>` +
-        `<circle cx="44" cy="17" r="9" fill="#F6B2C3" ${OL}/><ellipse cx="51" cy="19" rx="4" ry="3.6" fill="#EE8FA6" ${OL}/>` +
-        `<circle cx="50" cy="19" r=".8" fill="#7A3B4A"/><circle cx="52.5" cy="19" r=".8" fill="#7A3B4A"/>` +
-        eye(43, 14)
-    ),
-  sheep: () =>
-    sp(
-      56,
-      42,
-      legs([15, 21, 33, 39], 28, 13.5, 4, '#4A4A52') +
-        [
-          [16, 22, 8],
-          [24, 15, 9],
-          [34, 15, 9],
-          [41, 23, 8],
-          [32, 27, 9],
-          [22, 27, 9],
-        ]
-          .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#F6F3EA" stroke="#B9B4A6"/>`)
-          .join('') +
-        `<ellipse cx="29" cy="21" rx="12" ry="8" fill="#F6F3EA"/>` +
-        `<ellipse cx="41" cy="9" rx="3.5" ry="2" fill="#4A4A52"/><ellipse cx="47" cy="15" rx="6.5" ry="6" fill="#4A4A52" ${OL}/>` +
-        `<circle cx="48" cy="13.5" r="1.4" fill="#fff"/>`
-    ),
-  horse: () =>
-    sp(
-      60,
-      52,
-      `<path d="M9 24q-7 6-4 18" fill="none" stroke="#4A2A14" stroke-width="3.5" stroke-linecap="round"/>` +
-        legs([12, 19, 34, 41], 32, 19.5, 4.5, '#9A5B2E') +
-        `<ellipse cx="27" cy="29" rx="19" ry="9.5" fill="#A7642F" ${OL}/>` +
-        `<path d="M36 26 42 9 51 12 46 30Z" fill="#A7642F" ${OL}/>` +
-        `<path d="M41 8q-6 6-6 17" fill="none" stroke="#4A2A14" stroke-width="3.5" stroke-linecap="round"/>` +
-        `<path d="M43 6l1-5 4 5Z" fill="#A7642F" ${OL}/>` +
-        `<path d="M42 7Q50 4 57 14Q58 18 54 18L46 16Z" fill="#A7642F" ${OL}/>` +
-        eye(49, 10)
-    ),
-  duck: () =>
-    sp(
-      50,
-      40,
-      `<path d="M20 36v3.5h6M30 36v3.5h6" fill="none" stroke="#F07F1E" stroke-width="2.2" stroke-linecap="round"/>` +
-        `<path d="M4 22Q8 38 26 37Q42 36 42 26Q40 20 30 22Q16 24 4 22Z" fill="#F7CE2B" ${OL}/>` +
-        `<path d="M15 28q8 5 15-1" fill="none" ${OL}/>` +
-        `<circle cx="37" cy="14" r="8.5" fill="#F7CE2B" ${OL}/><path d="M44 12 50 15 44 18Z" fill="#F07F1E" ${OL}/>` +
-        eye(38, 12)
-    ),
-  elephant: () =>
-    sp(
-      62,
-      50,
-      `<path d="M7 20q-4 6-2 12" fill="none" ${OL}/>` +
-        legs([11, 20, 32, 40], 32, 17.5, 7.5, '#9AA3AE') +
-        `<ellipse cx="27" cy="24" rx="21" ry="15" fill="#A5AEB9" ${OL}/>` +
-        `<circle cx="46" cy="18" r="10.5" fill="#A5AEB9" ${OL}/>` +
-        `<path d="M53 20Q61 26 57 42" fill="none" stroke="#3A3A40" stroke-width="7.2" stroke-linecap="round"/>` +
-        `<path d="M53 20Q61 26 57 42" fill="none" stroke="#A5AEB9" stroke-width="5" stroke-linecap="round"/>` +
-        `<ellipse cx="39" cy="19" rx="6" ry="9.5" fill="#8C96A2" ${OL}/>` +
-        eye(49, 15)
-    ),
-  giraffe: () =>
-    sp(
-      56,
-      76,
-      `<path d="M9 44q-5 5-3 13" fill="none" ${OL}/>` +
-        legs([12, 18, 30, 36], 52, 23.5, 4, '#F2C04A') +
-        `<path d="M32 46 41 12 49 14 42 50Z" fill="#F2C04A" ${OL}/>` +
-        `<ellipse cx="25" cy="48" rx="17" ry="9.5" fill="#F2C04A" ${OL}/>` +
-        `<path d="M43 7V2M47 7V2" fill="none" ${OL}/>` +
-        `<ellipse cx="47" cy="11" rx="8" ry="5" fill="#F2C04A" ${OL}/>` +
-        [
-          [18, 46, 3],
-          [27, 51, 3],
-          [32, 44, 2.6],
-          [39, 34, 2.4],
-          [42, 23, 2.2],
-          [13, 51, 2],
-        ]
-          .map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}" fill="#9A6428"/>`)
-          .join('') +
-        eye(48, 10)
-    ),
-  lion: () =>
-    sp(
-      60,
-      44,
-      `<path d="M8 24q-6-2-5-10" fill="none" ${OL}/><circle cx="3" cy="13" r="2.6" fill="#8A5A2B"/>` +
-        legs([12, 19, 33, 40], 29, 14.5, 5, '#DBA646') +
-        `<ellipse cx="27" cy="25" rx="19" ry="10" fill="#E0AD4C" ${OL}/>` +
-        `<circle cx="45" cy="17" r="12.5" fill="#8A5A2B" ${OL}/><circle cx="46" cy="18" r="7.5" fill="#E0AD4C" ${OL}/>` +
-        `<path d="M48.5 20.5h3l-1.5 2Z" fill="#5A3A1C"/>` +
-        eye(44, 16) +
-        eye(50, 16)
-    ),
-};
+// The drawings live in animals.js (they are long). Each has parts that can move when it dances.
 export const ANIMALS = Object.keys(ANIMAL);
 export const FARM = ['cow', 'pig', 'sheep', 'horse', 'duck'];
 export const animal = (kind) => ANIMAL[kind]();
-
-// A plain toy rabbit (our own drawing) for position-word games.
-export function bunny() {
-  const f = '#D9B58B';
-  return sp(
-    34,
-    52,
-    `<ellipse cx="12" cy="11" rx="4" ry="10.5" fill="${f}" ${OL}/><ellipse cx="22" cy="11" rx="4" ry="10.5" fill="${f}" ${OL}/>` +
-      `<ellipse cx="12" cy="12" rx="1.6" ry="6.5" fill="#F3B3BD"/><ellipse cx="22" cy="12" rx="1.6" ry="6.5" fill="#F3B3BD"/>` +
-      `<ellipse cx="17" cy="38" rx="13.5" ry="13.5" fill="${f}" ${OL}/>` +
-      `<ellipse cx="8" cy="49" rx="6" ry="2.8" fill="${f}" ${OL}/><ellipse cx="26" cy="49" rx="6" ry="2.8" fill="${f}" ${OL}/>` +
-      `<circle cx="17" cy="25" r="9.5" fill="${f}" ${OL}/>` +
-      eye(13.5, 23.5) +
-      eye(20.5, 23.5) +
-      `<path d="M15.5 27h3l-1.5 1.8Z" fill="#B5606F"/>`
-  );
-}
+export const bunny = toyBunny;
 
 // ---------------------------------------------------------------- linking cubes
 const C = 18;

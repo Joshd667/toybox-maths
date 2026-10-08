@@ -7,7 +7,7 @@
 // When you add a new file to the app, add it to FILES below.
 // tools/validate.mjs checks this list against the repo and fails if they differ.
 
-const CACHE = 'toybox-maths-7';
+const CACHE = 'toybox-maths-8';
 
 const FILES = [
   './',
@@ -19,6 +19,8 @@ const FILES = [
   './js/reward.js',
   './js/wording.js',
   './js/draw.js',
+  './js/animals.js',
+  './js/brand.js',
   './js/rng.js',
   './js/research.js',
   './js/activities/index.js',
