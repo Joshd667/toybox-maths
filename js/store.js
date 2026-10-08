@@ -7,6 +7,8 @@ import { ACTIVITIES, TOYS } from './activities/index.js';
 const KEY = 'toybox-maths-v2';
 const fresh = () => ({
   v: 2,
+  welcomed: false, // has the first-time welcome been finished on this phone?
+  installed: false, // set when the phone says the app was added to the home screen
   current: null, // id of the child who is playing
   children: [], // see newChild() below
   // questions / goes: how many were chosen last time, offered again next time
@@ -29,6 +31,8 @@ try {
   if (raw) {
     const saved = JSON.parse(raw);
     state = { ...fresh(), ...saved, settings: { ...fresh().settings, ...saved.settings } };
+    // Families who were using the app before the welcome existed have already set it up.
+    if (saved.welcomed === undefined) state.welcomed = state.children.length > 0;
     for (const c of state.children) if (c.pronoun !== 'she') c.pronoun = 'he'; // "they" was removed
   }
 } catch {
@@ -41,6 +45,19 @@ const save = () => {
     /* ignore */
   }
 };
+
+// ---------------------------------------------------------------- first-time welcome, and adding to the home screen
+export const welcomed = () => state.welcomed;
+export function setWelcomed() {
+  state.welcomed = true;
+  save();
+}
+export const installed = () => state.installed;
+export function setInstalled(yes) {
+  if (state.installed === yes) return;
+  state.installed = yes;
+  save();
+}
 
 // ---------------------------------------------------------------- children
 export const children = () => state.children;

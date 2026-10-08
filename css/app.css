@@ -81,9 +81,13 @@ button { cursor: pointer; touch-action: manipulation; }
   background: var(--bg);
 }
 .top h1 { font-size: 22px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.top .brand { display: flex; align-items: center; gap: 6px; font-size: 23px; letter-spacing: -0.01em; overflow: visible; }
-.brand .logo { width: 40px; height: 40px; flex: none; margin: -4px 2px -2px -4px; }
+.top .brand { display: flex; align-items: center; gap: 6px; font-size: 22px; letter-spacing: -0.01em; overflow: visible; }
+.top .brand { flex: none; }
+.brand .logo { width: 38px; height: 38px; flex: none; margin: -4px 0 -2px -4px; }
 .brand b { font-weight: 600; color: var(--accent); }
+.top.at-home .who { flex: 0 1 auto; min-width: 44px; max-width: none; }
+.round.get { background: var(--accent); color: var(--accent-ink); width: 40px; height: 40px; margin-left: auto; }
+.round.ghost { background: none; }
 .round {
   width: 44px; height: 44px; flex: none; display: grid; place-items: center;
   border-radius: 50%; border: 0; background: var(--surface); color: var(--ink); text-decoration: none;
@@ -434,6 +438,46 @@ button { cursor: pointer; touch-action: manipulation; }
 .btn.chosen.r-easy { background: var(--easy); } .btn.chosen.r-right { background: var(--right); }
 .btn.chosen.r-hard { background: var(--hard); } .btn.chosen.r-skip { background: var(--skip); }
 .moved { font-family: var(--display); font-weight: 600; font-size: 19px; margin-top: 16px; }
+
+/* ------------------------------------------------------------ welcome (first time) and add-to-home-screen help */
+.welcome { display: grid; gap: 4px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
+.welcome .lede { margin: 6px 0 14px; }
+.welcome .small { font-size: 14px; color: var(--muted); text-align: center; margin: 10px 0 0; }
+.welcome .small .ico { width: 16px; height: 16px; vertical-align: -3px; }
+.welcome .add { margin-top: 4px; }
+.welcome .kids { margin-bottom: 12px; }
+.welcome .kids + .btn { margin-bottom: 14px; }
+.btn.wide { width: 100%; }
+.hello { text-align: center; padding-top: calc(30px + env(safe-area-inset-top)); }
+.hello h1 { font-size: 30px; }
+.hello h1 b { font-weight: 600; color: var(--accent); }
+.hello .lede { font-size: 18px; text-wrap: balance; }
+.hello-logo { width: 132px; height: 132px; margin: 0 auto 6px; }
+.hello-logo.app-icon { width: 96px; height: 96px; padding: 12px; margin: 6px auto 10px; border-radius: 24px; background: linear-gradient(#7566f5, #4532c9); box-shadow: 0 8px 20px rgba(69, 50, 201, 0.3); }
+.logo { display: block; width: 100%; height: 100%; }
+.points { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; text-align: left; }
+.points li { display: flex; align-items: center; gap: 14px; background: var(--surface); border-radius: 18px; padding: 12px 14px; font-size: 15px; line-height: 1.35; color: var(--muted); }
+.points b { display: block; font-family: var(--display); font-weight: 600; font-size: 18px; color: var(--ink); }
+.point-ico, .how-ico { width: 46px; height: 46px; flex: none; display: grid; place-items: center; border-radius: 14px; background: color-mix(in srgb, var(--accent) 14%, var(--surface)); color: var(--accent); }
+.point-ico .ico, .how-ico .ico { width: 26px; height: 26px; }
+.point-ico .scene { width: 34px; height: auto; }
+.dots { flex: 1; display: flex; justify-content: center; gap: 8px; margin: 0; }
+.dots i { width: 28px; height: 8px; border-radius: 4px; background: var(--line); }
+.dots i.on { background: var(--accent); }
+button.tile { border: 3px solid transparent; position: relative; font: inherit; color: inherit; }
+.own-tile[aria-pressed='true'] { border-color: var(--accent); }
+.own-tile[aria-pressed='false'] { background: none; border: 3px dashed var(--line); }
+.own-tile[aria-pressed='false'] .tile-pic { opacity: 0.35; filter: grayscale(1); }
+.own-tile[aria-pressed='false'] .tile-name { color: var(--muted); }
+.own-tile .tick { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); display: none; }
+.own-tile .tick::after { content: ''; position: absolute; left: 9px; top: 5px; width: 7px; height: 13px; border: solid var(--accent-ink); border-width: 0 3px 3px 0; transform: rotate(45deg); }
+.own-tile[aria-pressed='true'] .tick { display: block; }
+.how { list-style: none; counter-reset: how; margin: 0 0 16px; padding: 0; display: grid; gap: 10px; }
+.how li { counter-increment: how; display: flex; align-items: center; gap: 12px; background: var(--bg); border-radius: 16px; padding: 10px 12px; }
+.welcome .how li { background: var(--surface); }
+.how li::before { content: counter(how); font-family: var(--display); font-weight: 600; font-size: 20px; width: 18px; text-align: center; color: var(--muted); }
+.how-ico .logo { width: 34px; height: 34px; }
+.sheet .btn.wide { margin-top: 6px; }
 
 /* ------------------------------------------------------------ tips sheet */
 .sheet-back { position: fixed; inset: 0; z-index: 30; background: rgba(20, 18, 42, 0.5); }

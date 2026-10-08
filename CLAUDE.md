@@ -106,6 +106,17 @@ A new animal needs those parts too, or it will dance as a stiff cut-out.
   The logo is a smiling toy box with plain number blocks (1, 2, 3) jumping out; keep the blocks plain.
 - Animation can be switched off in Settings (and the phone's reduce-motion setting is respected): the animal then appears standing still.
 
+## First time, and adding to the home screen
+
+The first time the app is opened, `welcome()` in `app.js` is shown instead of any other screen: what the app is, who is
+playing, which toys are in the house, then how to add it to the home screen (left out if it is already running from there).
+`welcomed` in the saved data records that it was finished; phones that already had a child saved skip it.
+
+Until the app is on the home screen, the home screen's top bar has a round install button between the name and the child.
+It opens the same help in a sheet. Android gives us an install event to fire from our own button (`beforeinstallprompt`);
+iPhones do not, so they get the Share, Add to Home Screen steps. The button goes once the app runs from the home screen,
+or the phone reports it was installed.
+
 ## How a turn works
 
 1. **Get ready** (`readyScreen` in `app.js`): "The game" (an example picture, what you set up, what you ask, how he answers;

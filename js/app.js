@@ -5,6 +5,7 @@
 //   #/toy/<id>         activities for one toy          #/skill/<id>   activities for one skill
 //   #/play/<id>/<toy>  an activity (get ready -> set up -> questions -> finish)
 //   #/progress         #/guide         #/settings      #/who  (the children)
+// The very first time, a welcome is shown instead (welcome() below), whatever the address.
 // All taps are handled in one place near the bottom (onTap).
 
 import { ACTIVITIES, STRANDS, TOYS, byId, levelsOf } from './activities/index.js';
@@ -55,7 +56,13 @@ const RATING_WORD = { easy: 'Too easy', right: 'Just right', hard: 'Too tricky',
 const icon = {
   back: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   close: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
+  install: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3.5v10M7.5 9.5l4.5 4.5 4.5-4.5M5 16.5v2a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-2" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  share: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 14.5v-11M8 7l4-4 4 4M8.5 10H7a2 2 0 0 0-2 2v6.5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V12a2 2 0 0 0-2-2h-1.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  plusBox: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 8v8M8 12h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
   dice: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="8.5" cy="8.5" r="1.7" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/></svg>',
+  dots: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>',
+  book: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5ZM12 6v13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  lock: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
   tips: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/></svg>',
   star: (on, now) => `<svg class="star${on ? ' on' : ''}${now ? ' now' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z"/></svg>`,
 };
@@ -66,9 +73,10 @@ const BRAND = `<h1 class="brand" aria-label="Toybox Maths">${logo()}<span>Toybox
 // The bar at the top of the browsing screens: where you are (no title means the home screen), and who is playing.
 function topBar(title, back) {
   const c = store.child();
-  return `<header class="top">
+  return `<header class="top${title ? '' : ' at-home'}">
     ${back ? `<a class="round" href="${back}" aria-label="Back">${icon.back}</a>` : ''}
     ${title ? `<h1>${esc(title)}</h1>` : BRAND}
+    ${!title && canInstall() ? `<button class="round get" data-act="install-sheet" aria-label="Put Toybox Maths on your home screen">${icon.install}</button>` : ''}
     <a class="who" href="#/who" aria-label="Playing: ${esc(c.name)}. Change child"><span class="avatar">${mascot(c)}</span><span>${esc(c.name)}</span></a>
   </header>`;
 }
@@ -428,6 +436,130 @@ function progress() {
   </section>`;
 }
 
+// ---------------------------------------------------------------- adding the app to the home screen
+// Android and desktop Chrome hand us an "install" event we can fire from our own button.
+// iPhones and iPads do not: there the adult has to use the Share menu, so we show them how.
+let installEvent = null;
+const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const canInstall = () => !standalone() && !store.installed();
+function installHelp() {
+  if (installEvent) return `<button class="btn primary big wide" data-act="install">${icon.install}<span>Add to home screen</span></button>`;
+  if (isIOS)
+    return `<ol class="how">
+      <li><span class="how-ico">${icon.share}</span><span>Tap <b>Share</b> in the browser's bar.</span></li>
+      <li><span class="how-ico">${icon.plusBox}</span><span>Scroll down and tap <b>Add to Home Screen</b>.</span></li>
+      <li><span class="how-ico">${logo()}</span><span>Tap <b>Add</b>. The toy box appears with your other apps.</span></li>
+    </ol>`;
+  return `<ol class="how">
+      <li><span class="how-ico">${icon.dots}</span><span>Open your browser's <b>menu</b>.</span></li>
+      <li><span class="how-ico">${icon.plusBox}</span><span>Tap <b>Install app</b> or <b>Add to Home screen</b>.</span></li>
+    </ol>`;
+}
+const INSTALL_WHY = 'It opens full screen from its own icon, and works with no signal.';
+function installSheet() {
+  return `<div class="sheet-back" data-act="close-sheet"></div>
+  <aside class="sheet" role="dialog" aria-label="Add to home screen">
+    <button class="round sheet-close" data-act="close-sheet" aria-label="Close">${icon.close}</button>
+    <h2>Put it on your home screen</h2>
+    <p class="lede">${INSTALL_WHY}</p>
+    ${installHelp()}
+  </aside>`;
+}
+const sheetEl = () => document.getElementById('sheet');
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // keep it for our own button
+  installEvent = e;
+  store.setInstalled(false);
+  if (sheetEl().querySelector('.how')) sheetEl().innerHTML = installSheet();
+  if (!flow) draw(true);
+});
+window.addEventListener('appinstalled', () => {
+  installEvent = null;
+  store.setInstalled(true);
+  sheetEl().replaceChildren();
+  if (!store.welcomed()) return finishWelcome();
+  if (!flow) draw(true);
+});
+
+// ---------------------------------------------------------------- welcome (the first time the app is opened)
+// Four short screens: what this is, who is playing, which toys are in the house, add it to the home screen.
+// The last one is left out when the app is already running from the home screen.
+let welcomeStep = null;
+const welcomeSteps = () => ['hello', 'who', 'toys', ...(standalone() ? [] : ['install'])];
+function finishWelcome() {
+  store.setWelcomed();
+  welcomeStep = null;
+  go('#/');
+}
+const POINTS = [
+  ['toys', 'Played with real toys', 'The phone says what to lay out and what to ask. Your child answers with the toys.'],
+  ['dice', 'A few minutes at a time', 'Choose a game, or let the app choose. Stop whenever you like.'],
+  ['book', 'Honest about the research', 'Each game names the study behind it, and what that study does not show.'],
+  ['lock', 'Private', 'Names and progress stay on this phone. Nothing is sent anywhere.'],
+];
+function welcome() {
+  const steps = welcomeSteps();
+  if (welcomeStep === null) welcomeStep = store.children().length ? 2 : 0; // came back part-way through
+  welcomeStep = Math.min(welcomeStep, steps.length - 1);
+  const step = steps[welcomeStep];
+  const kids = store.children();
+  const last = welcomeStep === steps.length - 1;
+  const dots = `<p class="dots" aria-label="Step ${welcomeStep} of ${steps.length - 1}">${steps.slice(1).map((_, i) => `<i${i < welcomeStep ? ' class="on"' : ''}></i>`).join('')}</p>`;
+  const top = `<header class="top"><button class="round" data-act="welcome-back" aria-label="Back">${icon.back}</button>${dots}<span class="round ghost"></span></header>`;
+  const next = (label = last ? 'Finish' : 'Next') => `<button class="btn primary big wide" data-act="welcome-next">${label}</button>`;
+
+  if (step === 'hello')
+    return `<section class="page welcome hello">
+      <div class="hello-logo">${logo()}</div>
+      <h1>Welcome to <span>Toybox</span> <b>Maths</b></h1>
+      <p class="lede">Short maths games for little ones, played with the toys you already have.</p>
+      <ul class="points">${POINTS.map(([i, title, text]) => `<li><span class="point-ico">${i === 'toys' ? pic(toyArt.wooden()) : icon[i]}</span><span><b>${title}</b>${text}</span></li>`).join('')}</ul>
+      ${next('Set it up')}
+      <p class="small">Three quick steps.</p>
+    </section>`;
+
+  if (step === 'who') {
+    const used = kids.map((k) => k.animal);
+    if (!pickedMascot || !MASCOTS.includes(pickedMascot)) pickedMascot = MASCOTS.find((m) => !used.includes(m)) || MASCOTS[0];
+    return `${top}<section class="page welcome">
+      <p class="say">Who is playing?</p>
+      <p class="lede">Each child gets an animal that dances when they get one right. Stars and progress are kept for each child.</p>
+      ${kids.length ? `<ul class="kids">${kids.map((k) => `<li class="kid"><span class="kid-main"><span class="avatar big">${mascot(k)}</span><span class="kid-name">${esc(k.name)}</span></span></li>`).join('')}</ul>${next()}` : ''}
+      <form class="add" data-form="add-child">
+        <h2>${kids.length ? 'Add another child' : 'First child'}</h2>
+        <label class="field"><span>Name</span><input name="name" maxlength="14" autocomplete="off" autocapitalize="words" placeholder="Name or nickname" /></label>
+        <p class="field-label">Their animal</p>
+        <div class="mascots">${MASCOTS.map((m) => `<button type="button" class="mascot-pick" data-act="mascot" data-v="${m}" aria-pressed="${m === pickedMascot}" aria-label="${m}">${pic(D.animal(m))}</button>`).join('')}</div>
+        <p class="field-label">The questions should say</p>
+        ${pronounSeg('new-pronoun', pickedPronoun)}
+        <button class="btn ${kids.length ? '' : 'primary '}big" type="submit">${kids.length ? 'Add' : 'Next'}</button>
+      </form>
+      <p class="small">You can add more children later, from the name at the top.</p>
+    </section>`;
+  }
+
+  if (step === 'toys') {
+    const n = owned().length;
+    return `${top}<section class="page welcome">
+      <p class="say">Which toys do you have?</p>
+      <p class="lede">Tap any you do not have to switch them off. Their games are hidden.</p>
+      <div class="tiles">${TOYS.map((t) => `<button class="tile own-tile" data-act="own" data-v="${t.id}" aria-pressed="${owned().includes(t.id)}"><span class="tile-pic">${pic(toyArt[t.id]())}</span><span class="tile-name">${esc(t.name)}</span><span class="tick" aria-hidden="true"></span></button>`).join('')}</div>
+      <p class="small">${n ? `${n} ${n === 1 ? 'kind' : 'kinds'} of toy ticked.` : 'No toys ticked.'} Some games need no toys at all. Change this any time in Settings.</p>
+      ${next()}
+    </section>`;
+  }
+
+  return `${top}<section class="page welcome">
+    <div class="hello-logo app-icon">${logo()}</div>
+    <p class="say">Put it on your home screen</p>
+    <p class="lede">${INSTALL_WHY}</p>
+    ${installHelp()}
+    <button class="btn ${installEvent ? 'quiet' : 'primary big'} wide" data-act="welcome-next">${installEvent ? 'Not now' : isIOS ? 'Done' : 'Finish'}</button>
+    <p class="small">You can do this later from the ${icon.install} button at the top.</p>
+  </section>`;
+}
+
 // ---------------------------------------------------------------- who is playing
 let pickedMascot = null;
 let pickedPronoun = 'he';
@@ -547,6 +679,7 @@ function parts() {
 }
 function screen() {
   const [page, a, b] = parts();
+  if (!store.welcomed()) return { html: welcome(), tab: '', playing: true };
   if (!store.child()) return { html: who(), tab: '', playing: true };
   if (page === 'play') {
     const html = startActivity(a, b);
@@ -651,7 +784,31 @@ function onTap(el, e) {
     store.set('toys', TOYS.map((t) => t.id).filter((id) => toys.has(id)));
     return draw(true);
   }
-  if (act === 'close-sheet') return document.getElementById('sheet').replaceChildren();
+  if (act === 'close-sheet') return sheetEl().replaceChildren();
+
+  // ----- welcome, and adding to the home screen
+  if (act === 'welcome-next') {
+    if (welcomeStep >= welcomeSteps().length - 1) return finishWelcome();
+    if (welcomeSteps()[welcomeStep] === 'who' && !store.child()) return; // a child is added with the form's own button
+    welcomeStep++;
+    return draw(false);
+  }
+  if (act === 'welcome-back') {
+    welcomeStep = Math.max(0, welcomeStep - 1);
+    return draw(false);
+  }
+  if (act === 'install-sheet') {
+    sheetEl().innerHTML = installSheet();
+    return;
+  }
+  if (act === 'install') {
+    if (!installEvent) return;
+    const asked = installEvent;
+    installEvent = null; // the phone only lets it be used once
+    asked.prompt();
+    asked.userChoice.finally(() => !flow && draw(true));
+    return;
+  }
   if (!flow) return;
 
   // ----- inside an activity
@@ -812,6 +969,10 @@ document.addEventListener('submit', (e) => {
   store.addChild(name, pickedMascot, pickedPronoun);
   pickedMascot = null;
   pickedPronoun = 'he';
+  if (!store.welcomed()) {
+    welcomeStep = 2; // on to the toys
+    return draw(false);
+  }
   go('#/');
 });
 
