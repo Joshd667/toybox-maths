@@ -13,8 +13,8 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `css/app.css` | All styling. Colours and fonts are variables at the top. |
 | `js/app.js` | The screens and all tap handling. Routes are listed at the top of the file. |
 | `js/store.js` | Children's profiles and progress (saved on the phone), and how the next activity is chosen. |
-| `js/reward.js` | Stars, the jumping animal and the chime when he gets one right. |
-| `js/wording.js` | Rewrites "he" text as "she" or "they" for a child's profile. Add new verbs there if "they" reads wrongly. |
+| `js/reward.js` | Stars, the dancing animal and the chime when he gets one right. |
+| `js/wording.js` | Rewrites "he" text as "she" for a child's profile. |
 | `js/draw.js` | Every picture. Toy "sprites" plus layout helpers. Pure functions, no DOM. |
 | `js/rng.js` | Seeded random numbers, so every variation can be reproduced and tested. |
 | `js/research.js` | Every source cited, with what it found and what it does not show. |
@@ -23,6 +23,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `js/activities/<strand>.js` | The activities, one file per strand. **This is where most additions go.** |
 | `sw.js` | Offline support. Has a list of every file. |
 | `tools/validate.mjs` | The test. Run before every commit. |
+| `tools/sheet.mjs` | Review sheets: one page per activity with two variations at each difficulty. Use it to check words, pictures and answers agree. |
 | `tools/make-icons.py` | Rebuilds the icons (needs Playwright). |
 
 ## Adding an activity
@@ -31,8 +32,10 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 2. Fill in the fixed parts:
    - `id`: unique, lower-case-with-dashes. Never change an id later (progress is saved against it).
    - `title`, `strand`, `minutes` (1 to 10)
+   - `skill`: the sub-skill inside the strand, shown to the parent ("Counting out"). Reuse one the strand already has; a strand has 2 to 4.
+   - `needs`: extra things to fetch besides the toys ("A plate or box"), listed on the Get ready screen. `[]` if none.
    - `toys`: ids from `TOYS` in `index.js`; any one of them is enough to play. `[]` means no toys needed.
-   - `levels`: leave out for steps 1, 2 and 3, or give e.g. `[2, 3]`.
+   - `levels`: leave out for all three difficulties (1 Easy, 2 Medium, 3 Hard), or give e.g. `[2, 3]`.
    - `research`: ids from `js/research.js` (see the rules below). `why`: one plain sentence.
 3. Write `make(r, level, ctx)`. It returns one concrete variation:
    - `setup`: at most 3 short lines telling the adult what to lay out (the validator enforces 3)
@@ -54,9 +57,9 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
    - `easier`, `harder`: one sentence each
    - `words`: maths words to use out loud
 4. Use `r` (never `Math.random`) for anything random: `r.int(a, b)`, `r.pick(list)`, `r.sample(list, k)`, `r.shuffle(list)`, `r.bool(p)`.
-   Use `lv(level, a, b, c)` to choose by step. Use `pickToy(r, ctx, [...])` to draw a toy the family has out.
+   Use `lv(level, a, b, c)` to choose by difficulty. Make `easier` and `harder` fit the level too: do not suggest what that level already does. Use `pickToy(r, ctx, [...])` to draw a toy the family has out.
 5. Run `node tools/validate.mjs`. It must print `All good`.
-6. Look at it. Serve the folder (`python3 -m http.server`), open `#/a/<id>` at phone width, try every step and press Shuffle several times.
+6. Look at it. `node tools/sheet.mjs <folder> <id>` writes a review page; also serve the folder (`python3 -m http.server`), open `#/play/<id>` at phone width and play a turn on Ramp up.
 
 A new file anywhere under `js/`, `css/`, `icons/` or `fonts/` must be added to `FILES` in `sw.js` (the validator checks).
 A new strand file must also be imported in `js/activities/index.js`.
@@ -85,23 +88,33 @@ Draw generic toys only: no branded characters or copies of a product's own artwo
 - The reader is a parent holding a toddler's attention with one hand. Short sentences. UK spelling.
 - `ask` is spoken to a child under three: concrete, one question.
 - The child is referred to as "he". There is no name anywhere in the app or repo, and it should stay that way (the site is public).
-- Write activity text about "he" (plain present tense: "Does he count…", "he says"); `wording.js` converts it. Check a new activity reads properly with They selected in Settings.
+- Write activity text about "he"; `wording.js` converts it to "she" for a child set to She. There is no "they" option (the owner removed it).
 - The child is "he" in activity text. Buttons and screens the app draws itself stay neutral, because there can be several children.
 - Children's names are typed into the app and saved on that phone only. Never put a name in the code or the repo.
-- Feedback to the child is never negative. Wrong taps fade. Right answers earn a star, a burst and a jump from the child's animal (the owner asked for this).
+- Feedback to the child is never negative. Wrong taps fade. Right answers earn a star, a burst, and the child's animal dancing in the middle of the screen (the owner asked for this; it must never sit where the bottom bar can hide it).
 - The toys do the teaching. Do not turn activities into screen games; tapping is for answers only.
 - The adult is stressed and wants an activity in ten seconds. One thing per screen, big buttons, no scrolling to find the next step.
 - This is not a toy maker's app. No brick-shaped headers, studs, or brand colours in the interface. Toys appear only in the pictures.
 
-## How progress works
+## How a turn works
 
-An activity runs as: set-up screen, then questions one per screen (the main one, then its `more` follow-ups, then a fresh set-up).
-Each right answer is a star; at three the main button becomes Finish. Then the adult says how it went.
+1. **Get ready** (`readyScreen` in `app.js`): what you need (toy chips plus `needs`), how hard, how many questions.
+   Difficulty is Easy, Medium, Hard, Mix (a different one for each set-up) or Ramp up (easy at the start, hard by the end).
+   Questions are 3, 5, 8 or 10. Long builds with one question per set-up (`isBuild`) are counted in goes: 1, 2 or 3.
+2. **Start**, then for each set-up: the set-up screen (picture and lines, Ready), then its questions one per screen
+   (the main one, then its `more` follow-ups). When a set-up runs out, or Ramp up moves to the next difficulty, a new one is dealt.
+   The header always says "Question 2 of 5". It stops at the number asked for, even part-way through a set-up's follow-ups.
+3. **Stars**: one slot per question. A right answer (or Did it) fills it. Show the answer and Skip leave it empty. Nothing is taken away.
+4. **Done**: stars out of questions, then the adult taps Too easy / Just right / Too tricky / Not today.
 
-Progress is kept per child. Each strand has a step (1 to 3), starting at 1. After an activity the adult taps Too easy / Just right / Too tricky / Not today.
-Two "too easy" in a row in a strand moves it up; two "too tricky" moves it down (`rate()` in `store.js`).
-The picker (`weight()` in `store.js`) prefers activities never tried, then "just right" ones, and avoids repeats on the same day.
-Saved in `localStorage` under `toybox-maths-v2`. If the saved shape changes, bump the key or migrate.
+The owner found the old design confusing (steps 1 to 3, a separate "stars to finish" number, and no way to tell how many
+questions were coming). Do not bring back per-strand steps or a stars target.
+
+Progress is kept per child. For each activity it remembers the last difficulty and rating; `suggest()` in `store.js` opens it
+one harder after "too easy", one easier after "too tricky", otherwise the same. The picker (`weight()`) prefers activities
+never tried, then "just right" ones, and avoids repeats on the same day.
+Saved in `localStorage` under `toybox-maths-v2`. Older records have a numeric `level` where newer ones have `mode`; both are read.
+If the saved shape changes again, bump the key or migrate.
 
 ## Publishing
 

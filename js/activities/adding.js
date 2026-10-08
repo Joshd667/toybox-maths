@@ -14,6 +14,8 @@ export default [
     id: 'hidden-add',
     title: 'How many in the garage?',
     strand: 'adding',
+    skill: 'Adding more',
+    needs: ['A box'],
     toys: HIDE,
     minutes: 4,
     research: ['huttenlocher1994', 'hughes1986', 'devmatters'],
@@ -29,16 +31,16 @@ export default [
       return {
         setup: [`Find a box and turn it on its side. That is the ${place}.`, 'He must watch them go in, but not be able to see inside afterwards.'],
         scenes: [
-          { caption: `First: ${verb} ${plural(a, toy.one, toy.many)} in. Count them as they go.`, sprite: row([flow(items.slice(0, a), { maxW: 170, gap: 4 }), arrow(26), box()], { gap: 10, align: 'middle' }) },
+          { caption: `First: ${verb} ${plural(a, toy.one, toy.many)} in.${a > 1 ? ' Count them as they go.' : ''}`, sprite: row([flow(items.slice(0, a), { maxW: 170, gap: 4 }), arrow(26), box()], { gap: 10, align: 'middle' }) },
           { caption: `Then: ${verb} ${b} more in.`, sprite: row([flow(items.slice(a), { maxW: 170, gap: 4 }), arrow(26), box()], { gap: 10, align: 'middle' }) },
         ],
         ask: `How many ${toy.many} are in the ${place} now?`,
         answer: { type: 'number', value: total, choices: choices(r, total, { min: 1 }) },
         reveal: { caption: `${a} and ${b} more makes ${total}. Lift the box and count.`, sprite: flow(items.map((s, i) => tag(s, i + 1))) },
-        more: [numQ(r, `One more goes in. How many now?`, total + 1), numQ(r, 'Two come out. How many are left inside?', total - 1)],
+        more: [numQ(r, `One more goes in. How many now?`, total + 1), numQ(r, lv(level, 'One comes out. How many are left inside?', 'Two come out. How many are left inside?'), total + 1 - lv(level, 1, 2))],
         look: ['Does he use fingers, or stare into space and work it out? Both are real thinking.', 'If he says the first number again, repeat the story slowly and let him try once more.'],
-        easier: 'Use 1 and 1, or 2 and 1.',
-        harder: 'Add two more instead of one, or do it under a tea towel with no box.',
+        easier: lv(level, 'Leave the box off, so he can see them and count.', 'Use 1 and 1, or 2 and 1.'),
+        harder: lv(level, 'Add two more instead of one.', 'Take the toys away and just tell the story: "2 go in, then 1 more".'),
         words: ['first', 'then', 'now', 'altogether', 'more'],
       };
     },
@@ -48,6 +50,8 @@ export default [
     id: 'hidden-takeaway',
     title: 'Some drive away',
     strand: 'adding',
+    skill: 'Taking away',
+    needs: ['A box or tea towel'],
     toys: HIDE,
     minutes: 4,
     research: ['huttenlocher1994', 'hughes1986'],
@@ -71,8 +75,8 @@ export default [
         reveal: { caption: `${n} take away ${k} leaves ${left}. Lift the cover and count.`, sprite: left ? flow(items.slice(0, left).map((s, i) => tag(s, i + 1))) : undefined },
         more: [numQ(r, 'One goes back in. How many are hiding now?', left + 1)],
         look: ['Does he count back, or hold up fingers and fold some down?'],
-        easier: 'Start with 2 or 3 and take 1.',
-        harder: 'Take two or three out at once.',
+        easier: lv(level, 'Leave the cover off, so he can see what is left and count.', 'Start with 2 or 3 and take 1.'),
+        harder: lv(level, 'Take two out at once.', 'Take some out, then take one more out. Ask again.'),
         words: ['take away', 'left', 'fewer', 'none'],
       };
     },
@@ -82,6 +86,8 @@ export default [
     id: 'hiding-part',
     title: 'How many am I hiding?',
     strand: 'adding',
+    skill: 'Parts of a number',
+    needs: ['A cup or tea towel'],
     toys: ['cubes', 'duplo', 'cars', 'animals'],
     levels: [2, 3],
     minutes: 3,
@@ -94,17 +100,17 @@ export default [
       const seen = n - hidden;
       const items = times(n, () => toy.make(r));
       return {
-        setup: [`Count out ${plural(n, toy.one, toy.many)} together. Agree there are ${n}.`, `Ask him to shut his eyes. Hide ${hidden} under your hand or a cup, and leave ${seen} showing.`],
+        setup: [`Count out ${plural(n, toy.one, toy.many)} together. Agree there are ${n}.`, `Ask him to shut his eyes. Hide ${hidden} under a cup or tea towel, and leave ${seen} showing.`],
         scenes: [{ sprite: row([flow(items.slice(0, seen), { maxW: 190, gap: 5 }), cover(70, 44)], { gap: 14, align: 'middle' }) }],
         ask: `There were ${n}. You can see ${seen}. How many am I hiding?`,
         answer: { type: 'number', value: hidden, choices: choices(r, hidden, { min: 0, max: n }) },
         reveal: { caption: `${hidden}. ${seen} and ${hidden} make ${n}.`, sprite: row([flow(items.slice(0, seen), { maxW: 150, gap: 5 }), sign('+'), flow(items.slice(seen), { maxW: 150, gap: 5 })], { gap: 10, align: 'middle' }) },
         more: [(() => {
           const h2 = n > 2 ? r.pick(times(n - 1, (i) => i + 1).filter((x) => x !== hidden)) : hidden;
-          return { ask: `Eyes shut again… There are still ${n}. How many am I hiding now?`, scenes: [{ sprite: row([flow(items.slice(0, n - h2), { maxW: 190, gap: 5 }), cover(70, 44)], { gap: 14, align: 'middle' }) }], answer: { type: 'number', value: h2, choices: choices(r, h2, { min: 0, max: n }) }, reveal: { caption: `${h2}. ${n - h2} and ${h2} make ${n}.` } };
+          return { note: `Hide ${h2} this time and leave ${n - h2} showing.`, ask: `Eyes shut again… There are still ${n}. How many am I hiding now?`, scenes: [{ sprite: row([flow(items.slice(0, n - h2), { maxW: 190, gap: 5 }), cover(70, 44)], { gap: 14, align: 'middle' }) }], answer: { type: 'number', value: h2, choices: choices(r, h2, { min: 0, max: n }) }, reveal: { caption: `${h2}. ${n - h2} and ${h2} make ${n}.` } };
         })()],
         look: ['Does he count on from what he can see ("3… 4, 5: two!")?'],
-        easier: 'Use 3 altogether.',
+        easier: 'Use 2 or 3 altogether, and let him watch you hide them.',
         harder: 'Let him hide some and you guess. Get it wrong sometimes so he can correct you.',
         words: ['altogether', 'hiding', 'and', 'makes'],
       };
@@ -115,6 +121,8 @@ export default [
     id: 'numicon-pairs',
     title: 'Which shape fills the gap?',
     strand: 'adding',
+    skill: 'Parts of a number',
+    needs: [],
     toys: ['numicon'],
     minutes: 4,
     research: ['eef2020', 'ncetm'],
@@ -131,7 +139,7 @@ export default [
         answer: { type: 'pick', options: opts.map((v) => ({ key: String(v), sprite: numicon(v, 13) })), correct: String(b) },
         reveal: { caption: `The ${b} shape. ${a} and ${b} make ${n}.`, sprite: row([numicon(a, 17), sign('+'), numicon(b, 17), sign('='), numicon(n, 17)], { gap: 10, align: 'middle' }) },
         look: ['Does he try shapes until one fits? Trial and error is exactly right here. Later he will start to predict.', 'You may need to turn a shape round to make it fit.'],
-        easier: 'Use the 3, 4 or 5 shape as the big one.',
+        easier: lv(level, 'Put out just two shapes to choose from.', 'Use the 3, 4 or 5 shape as the big one.'),
         harder: 'Find a different pair that also covers it.',
         words: ['fits', 'and', 'makes', 'the same as'],
       };
@@ -142,6 +150,8 @@ export default [
     id: 'twin-towers',
     title: 'Twin towers',
     strand: 'adding',
+    skill: 'Adding more',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 4,
     research: ['devmatters', 'eef2020'],
@@ -159,7 +169,7 @@ export default [
         reveal: { caption: `${n} and ${n} make ${n * 2}. Stack one on the other and count.`, sprite: useCubes ? rod([...times(n, () => c1), ...times(n, () => c2)], true) : tower([...times(n, () => c1), ...times(n, () => c2)]) },
         more: [numQ(r, 'Take one off. How many now?', n * 2 - 1)],
         look: ['Does he count every brick from 1, or carry on from the first tower?'],
-        easier: 'Towers of 1 or 2.',
+        easier: lv(level, 'Build both towers yourself, then count together.', 'Towers of 1 or 2.'),
         harder: 'Make three towers the same.',
         words: ['the same', 'altogether', 'double'],
       };
@@ -170,6 +180,8 @@ export default [
     id: 'two-colours',
     title: 'Two colours, one tower',
     strand: 'adding',
+    skill: 'Parts of a number',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
     research: ['ncetm', 'eef2020'],
@@ -187,12 +199,12 @@ export default [
       return {
         setup: [`Build one tower: ${a} ${c1} at the bottom, then ${b} ${c2} on top.`],
         scenes: [{ sprite: t }],
-        ask: askPart ? `There are ${total} altogether, and ${a} are ${c1}. How many are ${c2}?` : `How many ${c1}? How many ${c2}? How many altogether?`,
+        ask: askPart ? `There are ${total} altogether, and ${a} are ${c1}. How many are ${c2}?` : `How many ${useCubes ? 'cubes' : 'bricks'} are in the tower altogether?`,
         answer: { type: 'number', value, choices: choices(r, value, { min: 1 }) },
         reveal: { caption: `${a} ${c1} and ${b} ${c2} make ${total}.` },
-        more: [...(askPart ? [numQ(r, `How many are ${c1}?`, a)] : [numQ(r, `How many are ${c1}?`, a), numQ(r, `How many are ${c2}?`, b)])],
+        more: [...(askPart ? [numQ(r, `Put one more ${c2} on top. How many altogether now?`, total + 1)] : [numQ(r, `How many are ${c1}?`, a), numQ(r, `How many are ${c2}?`, b)])],
         look: ['Can he tell you each part and the total without mixing them up?'],
-        easier: 'Use 3 bricks: 2 of one colour and 1 of the other.',
+        easier: lv(level, 'Count each colour together, touching each one.', `Use 3 ${useCubes ? 'cubes' : 'bricks'}: 2 of one colour and 1 of the other.`),
         harder: 'Snap it apart at the colour change and ask again. Has the total changed?',
         words: ['and', 'altogether', 'part', 'makes'],
       };
@@ -203,6 +215,8 @@ export default [
     id: 'wagons-join',
     title: 'Hook them on',
     strand: 'adding',
+    skill: 'Adding more',
+    needs: [],
     toys: ['brio'],
     minutes: 4,
     research: ['devmatters', 'gunderson2011'],
@@ -220,7 +234,7 @@ export default [
         reveal: { caption: `${a} and ${b} more makes ${total}. Hook them on and count.`, sprite: train([...times(a, () => w('blue')), ...times(b, () => w('green'))]) },
         more: [numQ(r, 'One wagon gets left at the station. How many now?', total - 1)],
         look: ['Does he guess before joining them, or wait and count? Encourage a guess first.'],
-        easier: 'One wagon and one more.',
+        easier: lv(level, 'Hook them on first, then count together.', 'One wagon and one more.'),
         harder: 'Unhook some instead: "the engine leaves 2 behind".',
         words: ['first', 'then', 'now', 'more', 'altogether'],
       };

@@ -11,6 +11,8 @@ export default [
     id: 'sort-rule',
     title: 'Where does this one go?',
     strand: 'measures',
+    skill: 'Sorting',
+    needs: ['Spare toys to hold up as the new one', 'Cars and animals together for Medium', 'A car, a brick and a cube in each of two colours for Hard'],
     toys: ['cars', 'animals', 'duplo', 'cubes', 'wooden'],
     minutes: 4,
     research: ['ncetm', 'eef2020'],
@@ -45,8 +47,9 @@ export default [
       }
       const swapped = r.bool(); // which side of the picture the first group is drawn on
       const groups = () => row(swapped ? [hit(grp(Rt), 'left'), hit(grp(L), 'right')] : [hit(grp(L), 'left'), hit(grp(Rt), 'right')], { gap: 12, align: 'top' });
-      const question = (ask) => {
-        const first = r.bool();
+      const firsts = r.shuffle([true, false, r.bool()]); // the three new ones never all go to the same group
+      const question = (ask, i) => {
+        const first = firsts[i];
         return {
           ask,
           scenes: [{ sprite: column([row([text('new one', 11, { bold: true }), mk(first)], { gap: 8, align: 'middle' }), groups()], { gap: 14 }) }],
@@ -56,11 +59,11 @@ export default [
       };
       return {
         setup: [setup, 'Do not tell him the rule. Hold up a new one each time.'],
-        ...question('I am sorting. Which group does this one belong in?'),
-        more: [question('And this one?'), question('And this one?')],
-        look: ['Can he say why? "Because it is red" is the real answer; the tap is just the start.'],
-        easier: 'Sort by colour with one kind of toy.',
-        harder: 'Sort the same toys a second way. If you sorted by colour, now sort by kind.',
+        ...question('I am sorting. Which group does this one belong in?', 0),
+        more: [question('And this one?', 1), question('And this one?', 2)],
+        look: [`Can he say why? "Because it is ${level === 2 ? 'a car' : c1}" is the real answer; the tap is just the start.`],
+        easier: lv(level, 'Use two colours that look very different, and say the colour as you hold each one up.', 'Sort by colour with one kind of toy.'),
+        harder: lv(level, 'Add a third colour and a third group.', 'Sort just the cars a second way: by colour.', 'Sort the same toys a second way: by kind this time.'),
         words: ['the same', 'different', 'belongs', 'sort', 'because'],
       };
     },
@@ -70,6 +73,8 @@ export default [
     id: 'odd-one-out',
     title: 'Odd one out',
     strand: 'measures',
+    skill: 'Sorting',
+    needs: [],
     toys: [],
     minutes: 2,
     research: ['ncetm', 'purpura2017'],
@@ -85,22 +90,25 @@ export default [
         why = `It is ${c2}. The others are all ${c1}.`;
       } else if (level === 2) {
         const animals = r.bool();
-        items = times(4, (i) => ((i === odd) !== animals ? animal(r.pick(FARM)) : car(r.pick(MORE_COLOURS))));
+        // Three different animals or three different colours of car, so no pair inside the group makes a second answer.
+        const kinds = r.sample(FARM, 4);
+        const cols = r.sample(MORE_COLOURS, 4);
+        items = times(4, (i) => ((i === odd) !== animals ? animal(kinds[i]) : car(cols[i])));
         why = animals ? 'It is a car. The others are all animals, whatever their colour.' : 'It is an animal. The others are all cars, whatever their colour.';
       } else {
         const n = r.int(2, 4);
         const m = n + (r.bool() ? 1 : -1);
         items = times(4, (i) => dots(i === odd ? m : n, 'loose', r));
-        why = `It has ${m} dots. The others all have ${n}, even though they are arranged differently.`;
+        why = `It has ${m} ${m === 1 ? 'dot' : 'dots'}. The others all have ${n}, even though they are arranged differently.`;
       }
       return {
-        setup: ['Hold the phone where he can reach, or set up four real toys the same way.'],
+        setup: [level === 3 ? 'Hold the phone where he can reach.' : 'Hold the phone where he can reach, or set up four real toys the same way.'],
         scenes: [{ sprite: row(items.map((s, i) => hit(s, String(i))), { gap: level === 3 ? 6 : 14, align: 'middle' }) }],
         ask: 'One of these is not like the others. Which one?',
         answer: { type: 'tap', correct: [String(odd)] },
         reveal: { caption: why },
         look: ['Ask "how is it different?" every time. The reason matters more than the tap.'],
-        easier: 'Three the same colour and one very different.',
+        easier: lv(level, 'Use real toys: three the same and one very different, such as three cars and a spoon.', 'Three the same colour and one very different.'),
         harder: 'Set up four toys where two answers could be right, and ask for both reasons.',
         words: ['the same', 'different', 'odd one out', 'because'],
       };
@@ -111,6 +119,8 @@ export default [
     id: 'order-size',
     title: 'Shortest to tallest',
     strand: 'measures',
+    skill: 'Longer and taller',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 4,
     research: ['devmatters', 'ncetm'],
@@ -118,7 +128,7 @@ export default [
     make(r, level, ctx) {
       const useCubes = has(ctx, 'cubes') && (!has(ctx, 'duplo') || r.bool(0.4));
       const k = lv(level, 3, 4, 5);
-      const hs = r.sample(level === 1 ? [1, 3, 5, 7] : [1, 2, 3, 4, 5, 6, 7], k);
+      const hs = level === 1 ? r.pick([[1, 3, 5], [1, 2, 4], [1, 2, 5], [2, 3, 5]]) : r.sample([1, 2, 3, 4, 5, 6, 7], k);
       const sorted = [...hs].sort((a, b) => a - b);
       let mixed = r.shuffle(hs);
       if (mixed.every((v, i) => v === sorted[i])) mixed = [...sorted].reverse();
@@ -131,9 +141,9 @@ export default [
         ask: 'Can you line them up from the shortest to the tallest?',
         answer: { type: 'do' },
         reveal: { caption: 'Like stairs going up.', sprite: row(sorted.map(mk), { gap: 14 }) },
-        more: [numQ(r, 'How many are in the tallest tower?', sorted[k - 1]), numQ(r, 'How many are in the shortest?', sorted[0])],
+        more: [numQ(r, `How many ${useCubes ? 'cubes' : 'bricks'} are in the tallest tower?`, sorted[k - 1], undefined, { min: 1 }), numQ(r, `How many ${useCubes ? 'cubes' : 'bricks'} are in the shortest tower?`, sorted[0], undefined, { min: 1 })],
         look: ['Does he find the shortest and tallest first, then fit the middle ones in?', 'Make sure they all stand on the same flat surface, or the comparison is unfair.'],
-        easier: 'Three towers that are very different heights.',
+        easier: lv(level, 'Just two towers. Which is taller?', 'Three towers that are very different heights.'),
         harder: 'Hand him one more tower and ask where it fits.',
         words: ['shortest', 'tallest', 'taller than', 'shorter than', 'in order'],
       };
@@ -144,6 +154,8 @@ export default [
     id: 'bricks-long',
     title: 'How many bricks long?',
     strand: 'measures',
+    skill: 'Measuring',
+    needs: ['Something to measure: a shoe, a spoon or a sofa cushion'],
     toys: ['duplo', 'cubes'],
     minutes: 5,
     research: ['devmatters', 'ncetm'],
@@ -152,20 +164,21 @@ export default [
       const useCubes = has(ctx, 'cubes') && (!has(ctx, 'duplo') || r.bool(0.4));
       const unit = useCubes ? 'cubes' : 'bricks';
       const things = [
-        has(ctx, 'cars') && { name: 'a toy car', s: car('red') },
-        has(ctx, 'brio') && { name: 'the engine and one wagon', s: row([wagon(null, 'blue'), engine()], { gap: 1 }) },
-        { name: 'his shoe', s: prop('shoe', 84, 26) },
-        { name: 'a spoon', s: prop('spoon', 96, 14) },
-        level > 1 && { name: 'your foot', s: prop('foot', 120, 30) },
-        level === 3 && { name: 'the sofa cushion', s: prop('cushion', 150, 30) },
+        has(ctx, 'cars') && { name: 'a toy car', say: 'the car', s: car('red') },
+        has(ctx, 'brio') && { name: 'the engine and one wagon', say: 'the train', s: row([wagon(null, 'blue'), engine()], { gap: 1 }) },
+        { name: 'his shoe', say: 'your shoe', s: prop('shoe', 84, 26) },
+        { name: 'a spoon', say: 'the spoon', s: prop('spoon', 96, 14) },
+        level > 1 && { name: 'your foot', say: 'my foot', s: prop('foot', 120, 30) },
+        level === 3 && { name: 'the sofa cushion', say: 'the cushion', s: prop('cushion', 150, 30) },
       ].filter(Boolean);
-      const { name: thing, s: thingPic } = r.pick(things);
+      const { name: thing, say, s: thingPic } = r.pick(things);
       const n = Math.max(2, Math.floor(thingPic.w / (useCubes ? 18 : 36)) - 1); // bricks laid so far: not quite enough
       const line = useCubes ? rod(times(n, (i) => MORE_COLOURS[i % 6])) : row(times(n, (i) => duplo(BRICK_COLOURS[i % 4])), { gap: 0 });
       return {
-        setup: [`Lay ${thing} on the floor.`, `Have a pile of ${unit} that are all the same size.`],
+        setup: [thing === 'your foot' ? 'Put your foot flat on the floor.' : `Lay ${thing} on the floor.`, `Have a pile of ${unit} that are all the same size.`],
         scenes: [{ caption: 'Start level with one end. No gaps.', sprite: column([thingPic, row([line, qbox(30, 24)], { gap: 3, align: 'bottom' })], { gap: 5, align: 'left' }) }],
-        ask: level === 1 ? `Can you make a line of ${unit} as long as ${thing}?` : `How many ${unit} long is ${thing}? Guess first, then measure.`,
+        ask: level === 1 ? `Can you make a line of ${unit} as long as ${say}?` : `How many ${unit} long is ${say}?`,
+        ...(level > 1 ? { note: 'Ask for a guess first, then measure.' } : {}),
         answer: { type: 'open' },
         look: ['Does he start level with one end?', 'Does he leave gaps or overlaps? Slide them together and count again to show it changes the answer.'],
         easier: 'Measure something short, and line the first brick up for him.',
@@ -179,6 +192,8 @@ export default [
     id: 'longer-train',
     title: 'Which train is longer?',
     strand: 'measures',
+    skill: 'Longer and taller',
+    needs: [],
     toys: ['brio'],
     minutes: 3,
     research: ['devmatters', 'ncetm'],
@@ -188,8 +203,9 @@ export default [
       const b = a + lv(level, 2, 1, 1);
       const longTop = r.bool();
       const mk = (n, c) => row([...times(n, () => wagon(null, c)), engine(c === 'blue' ? 'red' : 'green')], { gap: 1 });
-      const long = mk(b, 'blue');
-      const short = mk(a, 'yellow');
+      const [cLong, cShort] = r.shuffle(['blue', 'yellow']); // so the colour never gives the answer away
+      const long = mk(b, cLong);
+      const short = mk(a, cShort);
       const shift = level === 3 ? 44 : 0; // step 3: the shorter train is pushed forward so its nose sticks out
       // Engines face right. Both rows are the same total width so the picture lines up.
       const longRow = row([long, gap(shift || 0.1)], { gap: 0 });
@@ -204,9 +220,9 @@ export default [
         answer: { type: 'tap', correct: [longTop ? 'top' : 'bottom'] },
         reveal: { caption: `The one with ${b} wagons. Line the engines up nose to nose to check.` },
         more: [numQ(r, 'How many wagons are on the longer train?', b), numQ(r, 'How many more wagons does it have than the short one?', b - a, undefined, { min: 1 })],
-        look: ['At the harder step, does he pick the one that sticks out in front? Line them up and look again together.'],
+        look: [level === 3 ? 'Does he pick the one that sticks out in front? Line them up and look again together.' : 'Does he look along the whole train, or count the wagons? Either works.'],
         easier: 'One wagon against three.',
-        harder: 'Push the shorter train forward so it pokes out in front.',
+        harder: lv(level, 'Push the shorter train forward so it pokes out in front.', 'Push the shorter train forward so it pokes out in front.', 'Park the trains far apart and ask how he could check.'),
         words: ['longer', 'shorter', 'line up', 'the same length'],
       };
     },
@@ -216,6 +232,8 @@ export default [
     id: 'ramp-race',
     title: 'Ramp race',
     strand: 'measures',
+    skill: 'Measuring',
+    needs: ['A big book, tray or plank for the ramp', 'Three blocks or books to prop it up', 'Bricks or cubes to measure with'],
     toys: ['cars'],
     minutes: 8,
     research: ['weisberg2013', 'devmatters'],
@@ -224,11 +242,12 @@ export default [
       const hs = lv(level, [1, 3], [1, 2], [1, 2, 3]);
       return {
         setup: ['Find something flat and stiff for a ramp: a big book, a tray, a plank.', `Prop one end on ${list(hs.map(String))} blocks in turn. Use the same car each time.`, 'Let go, do not push.'],
-        scenes: [{ sprite: row(hs.map((h, i) => ramp(h, MORE_COLOURS[i])), { gap: 16, align: 'bottom' }) }],
-        ask: level === 1 ? 'Which ramp will make the car roll further? Guess, then try it.' : 'Which ramp will send the car furthest? Guess, try it, then measure how far with bricks.',
+        scenes: [{ sprite: row(hs.map((h, i) => ramp(h, 'red')), { gap: 16, align: 'bottom' }) }],
+        ask: level === 3 ? 'Which ramp will make the car roll furthest?' : 'Which ramp will make the car roll further?',
+        note: level === 1 ? 'Let him guess, then try it.' : 'Let him guess, then try it. Measure how far with a line of bricks.',
         answer: { type: 'open' },
         look: ['Does he make a guess before testing?', 'Does he want a second go to check? That is exactly what a scientist would do.', level > 1 ? 'Measure from the bottom of the ramp to the car with a line of bricks.' : 'Mark where the car stops with a brick.'],
-        easier: 'Just a low ramp and a high ramp.',
+        easier: lv(level, 'Roll the car down one ramp a few times first, then make it higher.', 'Just a low ramp and a high ramp.'),
         harder: 'Try a different car, or a carpet instead of a hard floor. What changes?',
         words: ['further', 'steeper', 'higher', 'faster', 'how far'],
       };
@@ -239,6 +258,8 @@ export default [
     id: 'shape-hunt',
     title: 'Is it a triangle?',
     strand: 'measures',
+    skill: 'Shapes',
+    needs: [],
     toys: [],
     minutes: 3,
     research: ['fisher2013', 'devmatters'],
@@ -257,8 +278,8 @@ export default [
         answer: { type: 'tap', multi: true, correct: picks.map((p, i) => (p.ok ? String(i) : null)).filter(Boolean) },
         reveal: { caption: quad ? 'Count the sides with a finger: four straight sides and four corners, whatever the shape looks like.' : 'A triangle has three straight sides and three corners. Upside down, long or thin, it is still a triangle. Curvy sides or a gap, and it is not.' },
         look: ['Does he reject a triangle for being upside down or skinny? Run a finger round it and count sides together.', 'Then hunt for triangle faces on the wooden blocks.'],
-        easier: 'Triangles against circles and squares only.',
-        harder: 'Include shapes that nearly are triangles: curvy sides, a gap, or the top cut off.',
+        easier: lv(level, 'Find a triangle face on a real block and run his finger round it first.', 'Triangles against circles and squares only.'),
+        harder: lv(level, 'Include shapes that nearly are triangles: curvy sides, a gap, or the top cut off.', 'Include shapes that nearly are triangles: curvy sides, a gap, or the top cut off.', 'Ask him to tell you why each of the others is not one.'),
         words: ['sides', 'corners', 'straight', 'curved', 'pointy'],
       };
     },
@@ -268,6 +289,8 @@ export default [
     id: 'feely-bag',
     title: 'Feely bag',
     strand: 'measures',
+    skill: 'Shapes',
+    needs: ['A bag or pillowcase'],
     toys: ['wooden'],
     minutes: 4,
     research: ['devmatters', 'zosh2015'],
@@ -287,7 +310,7 @@ export default [
         ...find(set[0], 'Can you find this one just by feeling?'),
         more: set.slice(1, 3).map((t) => find(t, 'Put it back. Now can you find this one?')),
         look: ['What does he say about how it feels? Feed him the words: flat, pointy, round, corners, edges, rolls.'],
-        easier: 'Two very different blocks, such as a cube and a cylinder.',
+        easier: lv(level, 'Let him feel both blocks and look at them before they go in the bag.', 'Two very different blocks, such as a cube and a cylinder.'),
         harder: 'Describe a block without naming it ("it has a point and three flat sides") and let him find it.',
         words: ['flat', 'round', 'corner', 'edge', 'pointy', 'rolls'],
       };

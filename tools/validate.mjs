@@ -1,6 +1,6 @@
 // tools/validate.mjs — run with:  node tools/validate.mjs
 //
-// Generates every activity at every step with many random seeds and checks the
+// Generates every activity at every difficulty with many random seeds and checks the
 // result is well formed: text filled in, pictures valid, answers consistent.
 // Also checks the service worker's file list matches the files in the repo.
 // Run this before every commit. It must end with "All good".
@@ -43,6 +43,8 @@ for (const a of ACTIVITIES) {
   else for (const t of a.toys) if (!toyIds.has(t)) err(W, `unknown toy "${t}"`);
   if (!(a.minutes >= 1 && a.minutes <= 10)) err(W, 'minutes should be between 1 and 10');
   if (badText(a.why)) err(W, 'missing "why"');
+  if (badText(a.skill)) err(W, 'missing "skill" (the sub-skill inside its strand)');
+  if (!Array.isArray(a.needs) || a.needs.some(badText)) err(W, '"needs" must be a list of extra things to fetch ([] if none)');
   if (!Array.isArray(a.research) || !a.research.length) err(W, 'needs at least one research source');
   else for (const r of a.research) if (!REFS[r]) err(W, `research id "${r}" is not in js/research.js`);
   for (const l of levelsOf(a)) if (![1, 2, 3].includes(l)) err(W, `bad level ${l}`);
@@ -126,7 +128,13 @@ function checkQuestion(q, scenes, where) {
   if (ans.type === 'spinner' && (!Array.isArray(ans.values) || !ans.values.length)) err(where, 'spinner needs values');
 }
 
-// Every strand should have something at every step.
+// A strand should have 2 to 4 sub-skills, so the grouping means something.
+for (const s of STRANDS) {
+  const n = new Set(ACTIVITIES.filter((a) => a.strand === s.id).map((a) => a.skill)).size;
+  if (n < 2 || n > 4) err(s.id, `has ${n} sub-skills; aim for 2 to 4`);
+}
+
+// Every strand should have something at every difficulty.
 for (const s of STRANDS)
   for (const l of [1, 2, 3]) if (!ACTIVITIES.some((a) => a.strand === s.id && levelsOf(a).includes(l))) err(s.id, `no activity at step ${l}`);
 

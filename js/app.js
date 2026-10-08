@@ -3,8 +3,8 @@
 // Screens are functions that return HTML text. route() picks one from the address:
 //   #/                 home: choose a toy (or a skill)
 //   #/toy/<id>         activities for one toy          #/skill/<id>   activities for one skill
-//   #/play/<id>/<toy>  an activity (set up -> questions -> finish)
-//   #/progress         #/guide         #/who  (children and sound)
+//   #/play/<id>/<toy>  an activity (get ready -> set up -> questions -> finish)
+//   #/progress         #/guide         #/settings      #/who  (the children)
 // All taps are handled in one place near the bottom (onTap).
 
 import { ACTIVITIES, STRANDS, TOYS, byId, levelsOf } from './activities/index.js';
@@ -20,7 +20,6 @@ const view = document.getElementById('view');
 const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const strandOf = (a) => STRANDS.find((s) => s.id === a.strand);
 const pic = (sprite, o = {}) => render(sprite, { bare: true, pad: 2, zoom: 3, ...o });
-const starsToFinish = () => store.settings().stars;
 // Activity text is written about "he"; w() rewrites it for this child and makes it safe to put on the page.
 const w = (s) => esc(reword(String(s), store.child()?.pronoun));
 
@@ -46,6 +45,8 @@ const owned = () => store.settings().toys;
 const toyTiles = () => TOY_TILES.filter((t) => t.id === 'none' || owned().includes(t.id));
 const forToy = (id) => ACTIVITIES.filter((a) => (id === 'none' ? a.toys.length === 0 : a.toys.includes(id)));
 const forSkill = (id) => ACTIVITIES.filter((a) => a.strand === id && store.playable(a));
+// The sub-skills inside a strand, in the order they first appear.
+const subSkills = (id) => [...new Set(forSkill(id).map((a) => a.skill))];
 const MASCOTS = ['giraffe', 'elephant', 'lion', 'duck', 'pig', 'cow', 'sheep', 'horse'];
 const mascot = (c) => pic(D.animal(c?.animal || 'giraffe'));
 
@@ -55,7 +56,7 @@ const icon = {
   close: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
   dice: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="8.5" cy="8.5" r="1.7" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.7" fill="currentColor"/><circle cx="12" cy="12" r="1.7" fill="currentColor"/></svg>',
   tips: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/></svg>',
-  star: (on) => `<svg class="star${on ? ' on' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z"/></svg>`,
+  star: (on, now) => `<svg class="star${on ? ' on' : ''}${now ? ' now' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z"/></svg>`,
 };
 
 // The bar at the top of the browsing screens: where you are, and who is playing.
@@ -78,8 +79,8 @@ function home() {
           return `<a class="tile" href="#/toy/${t.id}"><span class="tile-pic">${pic(toyArt[t.id]())}</span><span class="tile-name">${esc(t.name)}</span><span class="tile-n">${n} ${n === 1 ? 'activity' : 'activities'}</span></a>`;
         }).join('')}</div>`
       : `<div class="skills">${STRANDS.map((s) => {
-          const sum = store.strandSummary(s.id);
-          return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${forSkill(s.id).length} activities, step ${sum.level}</span></a>`;
+          const n = forSkill(s.id).length;
+          return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${n} ${n === 1 ? 'activity' : 'activities'}: ${esc(subSkills(s.id).join(', ').toLowerCase())}</span></a>`;
         }).join('')}</div>`;
   return `${topBar('Toybox Maths')}
   <section class="page">
@@ -106,6 +107,17 @@ function list(kind, id) {
   if (!chips.some((c) => c.id === listFilter)) listFilter = null;
   const shown = all.filter((a) => !listFilter || (isToy ? a.strand === listFilter : listFilter === 'none' ? a.toys.length === 0 : a.toys.includes(listFilter)));
   const toy = isToy ? id : listFilter && listFilter !== 'none' ? listFilter : '';
+  const item = (a) => {
+    const s = strandOf(a);
+    const last = store.actState(a.id).last;
+    return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" style="--c:${s.colour}">
+      <span class="li-title">${esc(a.title)}</span>
+      <span class="li-meta">${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
+      ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
+    </a></li>`;
+  };
+  // Looking at one skill: group the activities under its sub-skills.
+  const groups = isToy ? [['', shown]] : subSkills(id).map((k) => [k, shown.filter((a) => a.skill === k)]).filter(([, acts]) => acts.length);
   return `${topBar(title, '#/')}
   <section class="page">
     <button class="go small" data-act="pick-here">${icon.dice}<span>Pick one of these</span></button>
@@ -113,32 +125,56 @@ function list(kind, id) {
       <button class="chip" data-act="filter" data-v="" aria-pressed="${!listFilter}">All</button>
       ${chips.map((c) => `<button class="chip" data-act="filter" data-v="${c.id}" aria-pressed="${listFilter === c.id}">${esc(c.name)}</button>`).join('')}
     </div>
-    <ul class="list">${shown
-      .map((a) => {
-        const s = strandOf(a);
-        const last = store.actState(a.id).last;
-        return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" style="--c:${s.colour}">
-          <span class="li-title">${esc(a.title)}</span>
-          <span class="li-meta">${isToy ? esc(s.name) + ', ' : ''}${a.minutes} min</span>
-          ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
-        </a></li>`;
-      })
-      .join('')}</ul>
+    ${groups.map(([name, acts]) => `${name ? `<h2 class="group">${esc(name)}</h2>` : ''}<ul class="list">${acts.map(item).join('')}</ul>`).join('')}
   </section>`;
 }
 const shownIds = () => [...document.querySelectorAll('.list a')].map((el) => el.getAttribute('href').split('/')[2]);
 
 // ---------------------------------------------------------------- playing an activity
-// flow holds everything about the activity on screen.
+// A turn goes: Get ready (what you need, how hard, how many) -> Start -> set-up -> questions -> done.
+// flow holds everything about the turn on screen:
+//   stage 'ready' | 'setup' | 'ask' | 'done'
+//   mode  '1' | '2' | '3' (Easy, Medium, Hard) | 'mix' | 'ramp'      n  how many questions were asked for
+//   q     which question of the turn we are on (0 is the first)      marks  'star' or 'seen' for each finished one
+//   inst  the set-up on the table, qs its questions, qi which of them is showing, level its difficulty
 let flow = null;
 let from = '#/'; // where the close button goes back to
 
-function deal() {
-  // Draw a fresh variation of the activity: new numbers, colours and questions.
-  const toys = flow.toy ? [flow.toy] : owned();
-  flow.inst = flow.a.make(makeRng(flow.seed), flow.level, { toys });
+const LEVEL = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
+const MODE = { ...LEVEL, mix: 'Mix', ramp: 'Ramp up' };
+const MODE_HINT = {
+  1: 'Small numbers and the simplest set-ups.',
+  2: 'A step up: bigger numbers or one more thing to think about.',
+  3: 'The trickiest version.',
+  mix: 'A different difficulty for each set-up.',
+  ramp: 'Starts easy and gets harder as you go.',
+};
+// The difficulties on offer for an activity, plus Mix and Ramp up when it has more than one.
+const modesOf = (a) => [...levelsOf(a).map(String), ...(levelsOf(a).length > 1 ? ['mix', 'ramp'] : [])];
+// A long build with one question per set-up is counted in goes (1 to 3), not questions.
+const isBuild = (a) => a.minutes >= 5 && !a.make(makeRng(1), levelsOf(a)[0], { toys: a.toys }).more?.length;
+const countsOf = (a) => (isBuild(a) ? [1, 2, 3] : [3, 5, 8, 10]);
+const unitOf = (a, n) => (isBuild(a) ? (n === 1 ? 'go' : 'goes') : n === 1 ? 'question' : 'questions');
+const stars = () => flow.marks.filter((m) => m === 'star').length;
+
+// The difficulty of the set-up that question number q belongs to.
+function levelAt(q) {
+  const ls = levelsOf(flow.a);
+  if (flow.mode === 'ramp') return ls[Math.min(ls.length - 1, Math.floor((q * ls.length) / flow.n))];
+  if (flow.mode === 'mix') {
+    const pool = ls.length > 1 ? ls.filter((l) => l !== flow.level) : ls;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+  return Number(flow.mode);
+}
+// Lay out a fresh set-up: new numbers, colours and questions.
+function deal(level = levelAt(flow.q)) {
+  flow.level = level;
+  flow.seed = newSeed();
+  flow.inst = flow.a.make(makeRng(flow.seed), level, { toys: flow.toy ? [flow.toy] : owned() });
   flow.qs = [flow.inst, ...(flow.inst.more || [])];
   flow.qi = 0;
+  flow.setups++;
   flow.stage = 'setup';
   resetQuestion();
 }
@@ -151,19 +187,38 @@ function startActivity(id, toy) {
   const a = byId[id];
   if (!a) return null;
   if (!flow || flow.a !== a) {
-    flow = { a, toy: a.toys.includes(toy) ? toy : '', seed: newSeed(), level: store.levelFor(a), stars: 0, asked: 0, rated: null };
-    deal();
+    const mine = a.toys.filter((t) => owned().includes(t));
+    const counts = countsOf(a);
+    const saved = store.settings()[isBuild(a) ? 'goes' : 'questions'];
+    flow = {
+      a,
+      toy: a.toys.includes(toy) ? toy : mine[0] || a.toys[0] || '',
+      mode: store.suggest(a, modesOf(a)),
+      n: counts.includes(saved) ? saved : counts[0],
+      stage: 'ready',
+      q: 0,
+      marks: [],
+      level: null,
+      setups: 0,
+      rated: null,
+    };
   }
   return play();
 }
 
-const starRow = () => `<div class="stars" aria-label="${flow.stars} of ${starsToFinish()} stars">${Array.from({ length: Math.max(starsToFinish(), flow.stars) }, (_, i) => icon.star(i < flow.stars)).join('')}</div>`;
-const playTop = () => `<header class="top play-top">
+// One slot for each question: gold once he gets it right, a ring round the one being asked.
+const starRow = (n = flow.n) =>
+  `<div class="stars${n > 5 ? ' many' : ''}" aria-label="${stars()} ${stars() === 1 ? 'star' : 'stars'} so far">${Array.from({ length: n }, (_, i) => icon.star(flow.marks[i] === 'star', i === flow.q && flow.stage !== 'done' && !flow.marks[i])).join('')}</div>`;
+const track = () => `<div class="track" id="track">${starRow()}<span class="lvl">${LEVEL[flow.level]}</span></div>`;
+function playTop() {
+  const going = flow.stage !== 'ready';
+  return `<header class="top play-top">
     <a class="round" href="${from}" aria-label="Close">${icon.close}</a>
-    <h1>${esc(flow.a.title)}</h1>
-    ${starRow()}
+    <h1>${going ? `${isBuild(flow.a) ? 'Go' : 'Question'} ${flow.q + 1} of ${flow.n}` : esc(flow.a.title)}</h1>
     <button class="round" data-act="tips" aria-label="Tips and why">${icon.tips}</button>
+    ${going ? track() : ''}
   </header>`;
+}
 
 function scenePic(sc) {
   const svg = render(sc.sprite, { label: sc.caption || 'Picture' });
@@ -172,23 +227,52 @@ function scenePic(sc) {
   return `<figure class="fig">${svg}${cap}</figure>`;
 }
 
+const seg = (act, items, current, cls = '') =>
+  `<div class="seg wide ${cls}" role="group">${items.map(([v, label]) => `<button data-act="${act}" data-v="${v}" aria-pressed="${String(v) === String(current)}">${label}</button>`).join('')}</div>`;
+
+// The first screen of a turn: what to fetch, how hard, how many.
+function readyScreen() {
+  const { a } = flow;
+  const s = strandOf(a);
+  const mine = a.toys.filter((t) => owned().includes(t));
+  const toys = mine.length ? mine : a.toys;
+  const modes = modesOf(a);
+  const last = store.actState(a.id).last;
+  const lastMode = last && MODE[last.mode ?? last.level];
+  const needs = [...(toys.length === 1 ? [esc(toyName(toys[0]))] : []), ...a.needs.map(w)];
+  if (!toys.length && !needs.length) needs.push('Just this phone');
+  return `${playTop()}
+  <section class="page stage ready">
+    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span></p>
+    <div class="card">
+      <h2>You need</h2>
+      ${toys.length > 1 ? `<p class="card-note">One of these. Tap the one you have out.</p><div class="own">${toys.map((t) => `<button class="chip" data-act="toy" data-v="${t}" aria-pressed="${t === flow.toy}">${esc(toyName(t))}</button>`).join('')}</div>` : ''}
+${needs.length ? `<ul class="needs">${needs.map((t) => `<li>${t}</li>`).join('')}</ul>` : ''}
+    </div>
+    <div class="card">
+      <h2>How hard?</h2>
+      ${seg('mode', modes.filter((m) => LEVEL[m]).map((m) => [m, LEVEL[m]]), flow.mode)}
+      ${modes.includes('mix') ? seg('mode', [['mix', 'Mix'], ['ramp', 'Ramp up']], flow.mode, 'second') : ''}
+      <p class="card-note">${MODE_HINT[flow.mode]}${lastMode && RATING_WORD[last.rating] ? ` Last time: ${lastMode}, ${RATING_WORD[last.rating].toLowerCase()}.` : ''}</p>
+    </div>
+    <div class="card">
+      <h2>How many ${unitOf(a, 2)}?</h2>
+      ${seg('count', countsOf(a).map((n) => [n, n]), flow.n)}
+      ${isBuild(a) ? '<p class="card-note">Each go is a fresh build, so one is plenty.</p>' : ''}
+    </div>
+  </section>
+  <footer class="bar"><button class="btn primary big" data-act="start">Start</button></footer>`;
+}
+
 function setupScreen() {
-  const { a, inst, level } = flow;
-  const ls = levelsOf(a);
+  const { inst } = flow;
   const pics = inst.scenes.filter((s) => !s.flash);
   return `${playTop()}
   <section class="page stage">
-    <p class="kicker">Set up</p>
+    <p class="kicker">${flow.setups > 1 ? 'New set-up' : 'Set up'}</p>
     ${pics.map(scenePic).join('')}
     <ul class="setup">${inst.setup.map((t) => `<li>${w(t)}</li>`).join('')}</ul>
-    <div class="preview">
-      <p class="kicker">${flow.qs.length > 1 ? 'The questions' : 'The question'}</p>
-      <ol>${flow.qs.map((q) => `<li>${w(q.ask)}</li>`).join('')}</ol>
-    </div>
-    <div class="controls">
-      <div class="seg" role="group" aria-label="Step">${[1, 2, 3].map((l) => `<button data-act="level" data-v="${l}" aria-pressed="${l === level}" ${ls.includes(l) ? '' : 'disabled'}>Step ${l}</button>`).join('')}</div>
-      <button class="btn slim" data-act="shuffle">${icon.dice} Change it</button>
-    </div>
+    <div class="controls"><button class="btn slim" data-act="shuffle">${icon.dice} Different numbers</button></div>
   </section>
   <footer class="bar"><button class="btn primary big" data-act="ready">Ready</button></footer>`;
 }
@@ -215,27 +299,25 @@ function askScreen() {
     ${answerArea(q.answer)}
     <p class="feedback" id="feedback" aria-live="polite"></p>
     <div class="reveal" id="reveal" hidden>${q.reveal ? `<p>${w(q.reveal.caption)}</p>${q.reveal.sprite ? `<figure class="fig">${render(q.reveal.sprite, { label: 'Answer picture' })}</figure>` : ''}` : ''}</div>
-    <div class="mascot" id="mascot">${mascot(store.child())}</div>
   </section>
   <footer class="bar" id="bar">${hands ? `<button class="btn" data-act="skip">Skip</button><button class="btn primary big" data-act="did-it">Did it!</button>` : `${q.answer.multi ? '<button class="btn primary big" data-act="check">Check</button>' : ''}<button class="btn quiet" data-act="show">Show the answer</button>`}</footer>`;
 }
 
 // What the bottom bar offers once a question is finished.
 function nextBar() {
-  const more = flow.qi < flow.qs.length - 1;
-  const enough = flow.stars >= starsToFinish();
-  const next = more ? 'Next question' : 'New set-up';
-  return enough
-    ? `<button class="btn" data-act="next">${more ? 'One more' : 'New set-up'}</button><button class="btn primary big" data-act="finish">Finish</button>`
-    : `<button class="btn" data-act="finish">Finish</button><button class="btn primary big" data-act="next">${next}</button>`;
+  if (flow.q + 1 >= flow.n) return `<button class="btn primary big" data-act="finish">Finish</button>`;
+  return `<button class="btn" data-act="finish">Stop here</button><button class="btn primary big" data-act="next">Next ${unitOf(flow.a, 1)}</button>`;
 }
 
 function doneScreen() {
   const c = store.child();
+  const got = stars();
+  const asked = flow.marks.length;
   return `<section class="page done">
     <div class="done-mascot" id="mascot">${mascot(c)}</div>
-    ${starRow()}
-    <p class="say">${flow.stars ? `${flow.stars} ${flow.stars === 1 ? 'star' : 'stars'} for ${esc(c.name)}!` : 'All done.'}</p>
+    ${asked ? starRow(asked) : ''}
+    <p class="say">${got ? `${got} ${got === 1 ? 'star' : 'stars'} for ${esc(c.name)}!` : 'All done.'}</p>
+    ${asked ? `<p class="lede">${got} right out of ${asked} ${unitOf(flow.a, asked)}.</p>` : ''}
     <div id="rate">
       <p class="kicker">Grown-up: how did it go?</p>
       <div class="rate-btns">${store.RATINGS.map((r) => `<button class="btn r-${r.id}" data-act="rate" data-v="${r.id}">${r.label}</button>`).join('')}</div>
@@ -244,10 +326,12 @@ function doneScreen() {
   </section>`;
 }
 
-const play = () => ({ setup: setupScreen, ask: askScreen, done: doneScreen }[flow.stage]());
+const play = () => ({ ready: readyScreen, setup: setupScreen, ask: askScreen, done: doneScreen }[flow.stage]());
 
 function tipsSheet() {
-  const { a, inst } = flow;
+  const { a } = flow;
+  // Before Start there is no set-up yet, so show the tips for the easiest one.
+  const inst = flow.inst || a.make(makeRng(1), levelsOf(a)[0], { toys: a.toys });
   return `<div class="sheet-back" data-act="close-sheet"></div>
   <aside class="sheet" role="dialog" aria-label="Tips">
     <button class="round sheet-close" data-act="close-sheet" aria-label="Close">${icon.close}</button>
@@ -278,18 +362,18 @@ function setFeedback(ok, text) {
 function finishQuestion(gotIt) {
   if (flow.answered) return;
   flow.answered = true;
-  flow.asked++;
+  flow.marks[flow.q] = gotIt ? 'star' : 'seen';
   const r = document.getElementById('reveal');
   if (r && r.innerHTML.trim()) r.hidden = false;
+  document.getElementById('track').outerHTML = track();
   if (gotIt) {
-    flow.stars++;
     setFeedback(true, YES[Math.floor(Math.random() * YES.length)]);
-    document.querySelector('.play-top .stars').outerHTML = starRow();
-    celebrate(store.settings().sound);
+    document.querySelector(`.track .star:nth-child(${flow.q + 1})`)?.classList.add('pop');
+    celebrate(store.settings().sound, mascot(store.child()));
   }
   document.getElementById('bar').innerHTML = nextBar();
   document.querySelectorAll('.answers button').forEach((b) => (b.disabled = true));
-  document.getElementById('bar').scrollIntoView({ block: 'nearest' });
+  (r && !r.hidden ? r : document.getElementById('feedback')).scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 function wrong() {
   flow.wrong++;
@@ -304,25 +388,24 @@ function progress() {
   return `${topBar('Progress')}
   <section class="page">
     <div class="hero"><span class="avatar big">${mascot(c)}</span><div><p class="hero-name">${esc(c.name)}</p><p class="hero-stars">${icon.star(true)} ${c.stars} ${c.stars === 1 ? 'star' : 'stars'} so far</p></div></div>
-    <p class="lede">Each skill has its own step. Two "too easy" in a row moves it up, two "too tricky" moves it down, or set it here.</p>
+    <p class="lede">One dot for each activity. Tap a dot to play it. A star is one right answer.</p>
     <div class="prog">${STRANDS.map((s) => {
       const sum = store.strandSummary(s.id);
       return `<section class="prog-row" style="--c:${s.colour}">
         <header><h2>${esc(s.name)}</h2><span>${sum.tried} of ${sum.total} tried</span></header>
         <div class="dots">${forSkill(s.id).map((a) => `<a href="#/play/${a.id}" class="dot big r-${store.actState(a.id).last?.rating || 'none'}" title="${esc(a.title)}"><span class="sr">${esc(a.title)}</span></a>`).join('')}</div>
-        <div class="seg" role="group" aria-label="${esc(s.name)} step">${[1, 2, 3].map((l) => `<button data-act="strand-level" data-id="${s.id}" data-v="${l}" aria-pressed="${l === sum.level}">Step ${l}</button>`).join('')}</div>
       </section>`;
     }).join('')}</div>
     <p class="key"><span class="dot r-none"></span>Not tried <span class="dot r-right"></span>Just right <span class="dot r-easy"></span>Too easy <span class="dot r-hard"></span>Too tricky <span class="dot r-skip"></span>Not today</p>
     <h2>Lately</h2>
-    ${c.log.length ? `<ul class="log">${c.log.slice(0, 15).map((e) => (byId[e.id] ? `<li><a href="#/play/${e.id}">${esc(byId[e.id].title)}</a><span>${fmt(e.t)}, step ${e.level}${e.stars ? `, ${e.stars} ${e.stars === 1 ? 'star' : 'stars'}` : ''}</span><span class="badge r-${e.rating}">${RATING_WORD[e.rating]}</span></li>` : '')).join('')}</ul>` : '<p class="empty">Nothing yet. Play one and say how it went.</p>'}
+    ${c.log.length ? `<ul class="log">${c.log.slice(0, 15).map((e) => (byId[e.id] ? `<li><a href="#/play/${e.id}">${esc(byId[e.id].title)}</a><span>${fmt(e.t)}, ${MODE[e.mode ?? e.level].toLowerCase()}${e.asked ? `, ${e.stars} of ${e.asked} right` : e.stars ? `, ${e.stars} ${e.stars === 1 ? 'star' : 'stars'}` : ''}</span><span class="badge r-${e.rating}">${RATING_WORD[e.rating]}</span></li>` : '')).join('')}</ul>` : '<p class="empty">Nothing yet. Play one and say how it went.</p>'}
   </section>`;
 }
 
 // ---------------------------------------------------------------- who is playing
 let pickedMascot = null;
 let pickedPronoun = 'he';
-const PRONOUNS = [['he', 'He'], ['she', 'She'], ['they', 'They']];
+const PRONOUNS = [['he', 'He'], ['she', 'She']];
 const pronounSeg = (act, current) => `<div class="seg" role="group" aria-label="Wording">${PRONOUNS.map(([v, label]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === current}">${label}</button>`).join('')}</div>`;
 let confirmRemove = null;
 function who() {
@@ -364,10 +447,7 @@ function settingsScreen() {
       <div class="seg" role="group" aria-label="Look">${[['system', 'Match phone'], ['light', 'Light'], ['dark', 'Dark']].map(([v, l]) => `<button data-act="set" data-key="theme" data-v="${v}" aria-pressed="${s.theme === v}">${l}</button>`).join('')}</div>
     </div>
     <div class="setting"><h2>Sound</h2>${onOff('sound', s.sound)}</div>
-    <div class="setting"><h2>Animation</h2>${onOff('motion', s.motion)}<p>Stars flying and the animal jumping.</p></div>
-    <div class="setting"><h2>Stars to finish a turn</h2>
-      <div class="seg" role="group" aria-label="Stars to finish">${[2, 3, 5].map((n) => `<button data-act="set" data-key="stars" data-v="${n}" aria-pressed="${s.stars === n}">${n}</button>`).join('')}</div>
-    </div>
+    <div class="setting"><h2>Animation</h2>${onOff('motion', s.motion)}<p>Stars flying and the animal dancing.</p></div>
     <div class="setting"><h2>Questions about ${esc(c.name)} say</h2>${pronounSeg('pronoun', c.pronoun || 'he')}<p>Each child has their own. Change child from the name at the top.</p></div>
     <div class="setting"><h2>Our toys</h2><p>Untick anything you do not have. Its activities are hidden.</p>
       <div class="own">${TOYS.map((t) => `<button class="chip" data-act="own" data-v="${t.id}" aria-pressed="${s.toys.includes(t.id)}">${esc(t.name)}</button>`).join('')}</div>
@@ -392,9 +472,10 @@ function guideText() {
     <h2>How it works</h2>
     <ol class="steps">
       <li>Pick a toy, then an activity. Or tap Just pick one.</li>
+      <li>Check what you need. Choose how hard and how many questions, then tap Start.</li>
       <li>Set up from the picture and tap Ready.</li>
-      <li>Read the question out. He answers with the toys or by tapping.</li>
-      <li>Keep going for three stars, then say how it went.</li>
+      <li>Read each question out. He answers with the toys or by tapping.</li>
+      <li>After the last question, say how it went.</li>
     </ol>
     <p>The round "i" button on any activity has what to watch for, easier and harder versions, and the research behind it.</p>
 
@@ -405,11 +486,16 @@ function guideText() {
       <li><strong>Stop when he has had enough.</strong> There is no research-backed number of minutes for this age. Finish early whenever you like.</li>
       <li><strong>Talk.</strong> Much of the benefit in these studies came through the words adults used.</li>
       <li><strong>Praise the doing.</strong> "You checked every one" rather than "clever boy".</li>
-      <li><strong>Stars are a thank-you, not the point.</strong> They mark the end of a turn. The learning is in the toys and the talk.</li>
+      <li><strong>Stars are a thank-you, not the point.</strong> The learning is in the toys and the talk.</li>
     </ul>
 
-    <h2>Steps</h2>
-    <p>Every skill starts at step 1, the smallest numbers and simplest set-ups. Mark an activity "Too easy" twice and that skill moves up. Each child has their own steps.</p>
+    <h2>Easy, Medium and Hard</h2>
+    <p>Every activity starts on Easy, the smallest numbers and simplest set-ups. You choose each time. Mix gives a different difficulty for each set-up. Ramp up starts easy and gets harder.</p>
+    <p>One set-up often has two or three questions. The app lays out a new set-up when it runs out, until you have had the number of questions you asked for.</p>
+    <p>If you say an activity was too easy, it opens one harder next time. Too tricky, and it opens one easier.</p>
+
+    <h2>Stars</h2>
+    <p>There is one star to win for each question. He gets it when he answers right, or when you tap Did it. Show the answer and Skip move on without one. Nothing is ever taken away.</p>
 
     <h2>The kits you already have</h2>
     <ul class="plain">
@@ -499,10 +585,6 @@ function onTap(el, e) {
     const toy = parts()[0] === 'toy' ? parts()[1] : '';
     return a && go(`#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}`);
   }
-  if (act === 'strand-level') {
-    store.setStrandLevel(el.dataset.id, Number(v));
-    return draw(true);
-  }
 
   // ----- who is playing
   if (act === 'mascot') {
@@ -533,7 +615,7 @@ function onTap(el, e) {
   }
   if (act === 'set') {
     const key = el.dataset.key;
-    store.set(key, key === 'stars' ? Number(v) : key === 'theme' ? v : v === '1');
+    store.set(key, key === 'theme' ? v : v === '1');
     applySettings();
     return draw(true);
   }
@@ -551,10 +633,20 @@ function onTap(el, e) {
     document.getElementById('sheet').innerHTML = tipsSheet();
     return;
   }
-  if (act === 'level' || act === 'shuffle') {
-    if (act === 'level') flow.level = Number(v);
-    flow.seed = newSeed();
+  if (act === 'toy' || act === 'mode' || act === 'count') {
+    if (act === 'toy') flow.toy = v;
+    if (act === 'mode') flow.mode = v;
+    if (act === 'count') flow.n = Number(v);
+    return draw(true);
+  }
+  if (act === 'start') {
+    store.set(isBuild(flow.a) ? 'goes' : 'questions', flow.n);
     deal();
+    return draw(false);
+  }
+  if (act === 'shuffle') {
+    flow.setups--;
+    deal(flow.level);
     return draw(true);
   }
   if (act === 'ready') {
@@ -611,32 +703,34 @@ function onTap(el, e) {
     return finishQuestion(false);
   }
   if (act === 'next') {
-    if (flow.qi < flow.qs.length - 1) {
+    flow.q++;
+    // Carry on with this set-up while it has questions left (and, when ramping up, while it is still the right difficulty).
+    const stay = flow.qi < flow.qs.length - 1 && (flow.mode !== 'ramp' || levelAt(flow.q) === flow.level);
+    if (stay) {
       flow.qi++;
       resetQuestion();
-    } else {
-      flow.seed = newSeed();
-      deal(); // back to a new set-up; stars carry on
-    }
+    } else deal();
     return draw(false);
   }
   if (act === 'finish') {
     flow.stage = 'done';
     draw(false);
-    if (flow.stars) finale(store.settings().sound);
+    if (stars()) finale(store.settings().sound);
     return;
   }
   if (act === 'rate') {
     if (flow.rated) return;
     flow.rated = v;
-    const moved = store.rate(flow.a.id, v, flow.level, flow.stars);
+    store.rate(flow.a.id, v, flow.mode, stars(), flow.marks.length);
     document.querySelectorAll('.rate-btns button').forEach((b) => {
       b.disabled = true;
       if (b === el) b.classList.add('chosen');
     });
+    const nextMode = store.suggest(flow.a, modesOf(flow.a));
+    const moved = nextMode !== flow.mode ? `Next time this opens on ${MODE[nextMode]}.` : '';
     const box = document.getElementById('after');
     box.hidden = false;
-    box.innerHTML = `${moved ? `<p class="moved">${esc(moved)}.</p>` : ''}<div class="row"><button class="btn" data-act="again">Same again</button><button class="btn" data-act="surprise">${icon.dice} Another</button><a class="btn primary" href="${from}">Done</a></div>`;
+    box.innerHTML = `${moved ? `<p class="moved">${moved}</p>` : ''}<div class="after-btns"><a class="btn primary big" href="${from}">Done</a><button class="btn" data-act="again">Same again</button><button class="btn" data-act="surprise">${icon.dice} Another</button></div>`;
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
   }

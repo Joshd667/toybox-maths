@@ -12,6 +12,8 @@ export default [
     id: 'who-has-more',
     title: 'Which has more?',
     strand: 'comparing',
+    skill: 'Which has more',
+    needs: [],
     toys: ANY,
     minutes: 3,
     research: ['devmatters', 'purpura2017'],
@@ -44,11 +46,11 @@ export default [
         scenes: [{ sprite: row([hit(L, 'left'), hit(Rt, 'right')], { gap: 14, align: 'middle' }) }],
         ask: askFewer ? 'Which group has fewer?' : 'Which group has more?',
         answer: { type: 'tap', correct: [correct] },
-        reveal: { caption: `${Math.max(a, b)} is more than ${Math.min(a, b)}. Line them up in pairs to see the extra ${b - a === 1 ? 'one' : 'ones'}.` },
-        more: [numQ(r, 'How many are in the bigger group?', b), numQ(r, 'How many more is that than the smaller group?', b - a, `${b - a} more.`, { min: 1 })],
+        reveal: { caption: `${askFewer ? `${a} is fewer than ${b}` : `${b} is more than ${a}`}. Line them up in pairs to see the extra ${b - a === 1 ? 'one' : 'ones'}.` },
+        more: [numQ(r, 'How many are in the group with more?', b), numQ(r, 'One group has more. How many more?', b - a, `${b - a} more.`, { min: 1 })],
         look: ['Does he judge by eye or count? For close numbers, counting or pairing up is the reliable way.'],
         easier: 'Make one group much bigger than the other.',
-        harder: 'Ask "how many more?" after he has chosen.',
+        harder: lv(level, 'Make the two groups closer in number.', 'Spread the smaller group out so it takes up more room.', 'Ask which has fewer, and how many fewer.'),
         words: ['more', 'fewer', 'the same'],
       };
     },
@@ -58,6 +60,8 @@ export default [
     id: 'fair-shares',
     title: 'Fair shares',
     strand: 'comparing',
+    skill: 'Making the same',
+    needs: ['Duplo bricks or cubes for biscuits'],
     toys: ['animals'],
     minutes: 4,
     research: ['frydman1988', 'devmatters'],
@@ -79,10 +83,10 @@ export default [
           caption: extra ? `${each} each, and 1 left over. Ask him what to do with the spare one.` : `${each} each. Nobody has more than anybody else.`,
           sprite: row(kinds.map((a) => column([flow(times(each, food), { maxW: 46, gap: 3, rowGap: 3 }), animal(a)], { gap: 6 })), { gap: 26, align: 'bottom' }),
         },
-        more: [numQ(r, 'How many biscuits did each animal get?', each)],
+        more: [numQ(r, 'How many biscuits did each animal get?', each, null, { min: 1 })],
         look: ['Does he deal them out one at a time? That is the reliable method.', 'Does he check at the end that the piles match?'],
-        easier: 'Two animals and 4 biscuits.',
-        harder: 'Add one extra biscuit so it does not share out evenly.',
+        easier: lv(level, 'Share them out together: "one for you, one for you".', 'Two animals and 4 biscuits.', 'Two animals and 4 biscuits.'),
+        harder: lv(level, 'Add one extra biscuit so it does not share out evenly.', 'Add one extra biscuit so it does not share out evenly.', 'Bring one more animal and share them all out again.'),
         words: ['share', 'the same', 'fair', 'each', 'left over'],
       };
     },
@@ -92,6 +96,8 @@ export default [
     id: 'taller-tower',
     title: 'Taller and shorter',
     strand: 'comparing',
+    skill: 'Which has more',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
     research: ['devmatters', 'ncetm'],
@@ -107,7 +113,7 @@ export default [
       const L = tallLeft ? mk(b, cb) : mk(a, ca);
       const Rt = tallLeft ? mk(a, ca) : mk(b, cb);
       const thing = useCubes ? 'cubes' : 'bricks';
-      const base = { more: [numQ(r, 'How many are in the tall tower?', b)], setup: [`Build two towers, one with ${a} ${thing} and one with ${b}. Stand them side by side on the table.`], words: ['taller', 'shorter', 'the same', 'how many more'] };
+      const base = { more: [numQ(r, 'How many are in the tall tower?', b)], setup: [`Build two towers of ${thing}, one ${a} tall and one ${b} tall. Stand them side by side on the table.`], words: ['taller', 'shorter', 'the same', 'how many more'] };
       if (level === 1) {
         const askShort = r.bool(0.4);
         return {
@@ -138,6 +144,8 @@ export default [
     id: 'one-more-than-mine',
     title: 'Build one like mine',
     strand: 'comparing',
+    skill: 'Making the same',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 4,
     research: ['devmatters', 'sarnecka2008'],
@@ -149,16 +157,18 @@ export default [
       const target = { same: n, more: n + 1, fewer: n - 1, 'two more': n + 2 }[rule];
       const words = { same: 'the same number as', more: 'one more than', fewer: 'one fewer than', 'two more': 'two more than' }[rule];
       const mk = (k, c) => (useCubes ? rod(times(k, () => c), true) : tower(times(k, () => c)));
+      const thing = useCubes ? 'cubes' : 'bricks';
+      const both = row([column([mk(n, 'red'), text('mine', 11)], { gap: 4 }), column([mk(target, 'blue'), text('the new one', 11)], { gap: 4 })], { gap: 30, align: 'bottom' });
       return {
-        setup: [`Build a tower of ${n} and stand it in front of him.`, 'Give him a pile of loose bricks.'],
+        setup: [`Build a tower of ${n} ${thing} and stand it in front of him.`, `Give him a pile of loose ${thing}.`],
         scenes: [{ caption: 'Your tower', sprite: mk(n, 'red') }],
         ask: `This is my tower. Can you build one with ${words} mine?`,
         answer: { type: 'do' },
-        reveal: { caption: `Mine has ${n}. His should have ${target}.`, sprite: row([column([mk(n, 'red'), text('mine', 11)], { gap: 4 }), column([mk(target, 'blue'), text('the new one', 11)], { gap: 4 })], { gap: 30, align: 'bottom' }) },
-        more: [numQ(r, 'How many are in your tower?', target)],
+        reveal: { caption: `Mine has ${n}. His should have ${target}.`, sprite: both },
+        more: [{ ...numQ(r, 'How many are in your tower?', target), scenes: [{ sprite: both }] }],
         look: ['Does he build alongside yours and compare, or count yours first?'],
-        easier: 'Ask for one exactly the same.',
-        harder: 'Ask for one fewer, or two more.',
+        easier: lv(level, 'Use a tower of 2 and let him build right beside it.', 'Ask for one exactly the same.', 'Ask for just one more.'),
+        harder: lv(level, 'Ask for one more than yours.', 'Ask for one fewer, or two more.', 'Ask for two fewer.'),
         words: ['the same', 'one more', 'one fewer'],
       };
     },
@@ -168,6 +178,8 @@ export default [
     id: 'enough-garages',
     title: 'Enough for everyone?',
     strand: 'comparing',
+    skill: 'Enough for each',
+    needs: ['Long Duplo bricks for parking spaces or beds'],
     toys: ['cars', 'animals'],
     minutes: 4,
     research: ['gelman1978', 'devmatters'],
@@ -183,20 +195,20 @@ export default [
       const place = cars ? 'parking space' : 'bed';
       const scene = column([flow(times(n, item), { gap: 6 }), flow(times(homes, home), { gap: 8 })], { gap: 14 });
       const base = {
-        setup: [`Put out ${n} ${things}.`, `Lay out ${plural(homes, 'long Duplo brick', 'long Duplo bricks')} in a row. Each one is a ${place}.`],
+        setup: [`Put out ${n} ${things}.`, homes === 1 ? `Lay out 1 long Duplo brick. It is a ${place}.` : `Lay out ${homes} long Duplo bricks in a row. Each one is a ${place}.`],
         scenes: [{ sprite: scene }],
         words: ['enough', 'not enough', 'one each', 'how many more'],
         more: [numQ(r, `How many ${things} are there altogether?`, n)],
         look: ['Does he match them up one by one to find out?'],
-        easier: 'Use 2 or 3, with none missing or lots missing.',
-        harder: `Ask how many more ${place}s are needed.`,
+        easier: lv(level, `Put each one on its ${place} together, then ask.`, 'Just ask if there are enough.', 'Just ask if there are enough.'),
+        harder: lv(level, `Ask how many more ${place}s are needed.`, `Take one ${place} away and ask again.`, `Take one ${place} away and ask again.`),
       };
       if (level === 1)
         return {
           ...base,
           ask: `Is there a ${place} for every one of the ${things}?`,
           answer: { type: 'pick', options: [{ key: 'yes', label: 'Yes, enough' }, { key: 'no', label: 'No, not enough' }], correct: short === 0 ? 'yes' : 'no' },
-          reveal: { caption: short === 0 ? 'Yes. One each, none left over.' : `No. ${short} of the ${things} have nowhere to go.` },
+          reveal: { caption: short === 0 ? 'Yes. One each, none left over.' : short === 1 ? `No. One of the ${things} has nowhere to go.` : `No. ${short} of the ${things} have nowhere to go.` },
         };
       return {
         ...base,

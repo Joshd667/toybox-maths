@@ -1,5 +1,5 @@
 // reward.js — what happens on screen when he gets one right.
-// A burst of stars, the child's animal jumps, and a short chime (if sound is on).
+// A burst of stars, the child's animal dances in the middle of the screen, and a short chime (if sound is on).
 // Sounds are made in code, so there are no audio files to download.
 
 let audio = null;
@@ -51,31 +51,40 @@ function burst(count, spread) {
   setTimeout(() => box.remove(), 1400);
 }
 
-function jump(cls) {
-  const m = document.getElementById('mascot');
-  if (!m) return;
-  m.classList.remove('jump', 'dance');
-  void m.offsetWidth; // restart the animation
-  m.classList.add(cls);
+// The child's animal bounds into the middle of the screen, dances, and hops away again.
+// It floats above the page, so it is never hidden behind the buttons, and taps pass straight through it.
+function cheer(animal) {
+  document.querySelectorAll('.cheer').forEach((c) => c.remove());
+  if (!animal) return;
+  const box = document.createElement('div');
+  box.className = 'cheer';
+  box.setAttribute('aria-hidden', 'true');
+  box.innerHTML = `<div class="cheer-animal">${animal}</div>`;
+  document.body.appendChild(box);
+  setTimeout(() => box.remove(), 2300);
 }
 
-// One right answer.
-export function celebrate(sound) {
-  burst(14, 150);
-  jump('jump');
-  document.querySelector('.stars .star.on:last-of-type')?.classList.add('pop');
+// One right answer. `animal` is the picture (SVG text) of the child's animal.
+export function celebrate(sound, animal) {
+  cheer(animal);
+  burst(16, 170);
   if (sound) chime([[659, 0, 0.18], [784, 0.09, 0.18], [1047, 0.18, 0.32]]);
 }
 
-// The end of a turn.
+// The end of a turn: the animal on the finish screen dances.
 export function finale(sound) {
   burst(26, 240);
   setTimeout(() => burst(18, 170), 350);
-  jump('dance');
+  const m = document.getElementById('mascot');
+  if (m) {
+    m.classList.remove('dance');
+    void m.offsetWidth; // restart the animation
+    m.classList.add('dance');
+  }
   if (sound) chime([[523, 0, 0.16], [659, 0.12, 0.16], [784, 0.24, 0.16], [1047, 0.36, 0.2], [784, 0.5, 0.14], [1047, 0.62, 0.45]]);
 }
 
 // Leaving the screen: clear anything still flying.
 export function hush() {
-  document.querySelectorAll('.burst').forEach((b) => b.remove());
+  document.querySelectorAll('.burst, .cheer').forEach((b) => b.remove());
 }

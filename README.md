@@ -6,7 +6,7 @@ in the house: Duplo, wooden blocks, cars, animals, Brio trains, linking cubes, N
 It is a web app that installs on a phone (open the site, then "Add to Home Screen") and works offline.
 The adult reads the set-up and the question; the child answers with the toys, and sometimes by tapping.
 
-- 66 activities in 8 skills, browsed by toy or by skill, each with up to three steps of difficulty
+- 66 activities in 8 skills, browsed by toy or by skill, grouped into sub-skills, each playable on Easy, Medium or Hard, mixed, or ramping up, for as many questions as you choose
 - one screen to set up, then one question per screen, with follow-up questions on the same set-up
 - a profile for each child, with their own progress and stars
 - every activity is randomised (numbers, colours, toys), so it can be replayed

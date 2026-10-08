@@ -12,6 +12,8 @@ export default [
     id: 'count-line',
     title: 'How many are there?',
     strand: 'counting',
+    skill: 'Counting things',
+    needs: [],
     toys: [...ANY, 'brio'],
     minutes: 3,
     research: ['gelman1978', 'mix2012', 'devmatters'],
@@ -41,7 +43,7 @@ export default [
           'Ask "so how many?" afterwards. Does he say the last number, or start counting again?',
         ],
         easier: 'Use fewer toys, spaced out in a line.',
-        harder: 'Jumble them up. Show him how to slide each one aside as he counts it.',
+        harder: lv(level, 'Jumble them up.', 'Jumble them up.', 'Add a few more toys.') + ' Show him how to slide each one aside as he counts it.',
         words: ['how many', 'altogether'],
       };
     },
@@ -51,6 +53,8 @@ export default [
     id: 'give-n',
     title: 'Bring me…',
     strand: 'counting',
+    skill: 'Counting out',
+    needs: ['A plate or box'],
     toys: ANY,
     minutes: 4,
     research: ['wynn1990', 'sarnecka2008'],
@@ -66,7 +70,7 @@ export default [
         reveal: { caption: `Count what he brought together. It should be ${n}.`, sprite: flow(times(n, (i) => tag(toy.make(r), i + 1))) },
         more: [numQ(r, 'Now fetch one more. How many have I got?', n + 1, `${n + 1}. One more than ${n}.`)],
         look: ['Does he count them out and stop, or grab a handful?', 'If the number is wrong, ask "Is that ' + n + '? Can you check?" before fixing it yourself.'],
-        easier: 'Ask for 1, 2 or 3.',
+        easier: lv(level, 'Ask for 1 or 2.', 'Ask for 1, 2 or 3.'),
         harder: 'Ask for a bigger number, or ask for "one more than that".',
         words: ['how many', 'enough', 'too many'],
       };
@@ -77,6 +81,8 @@ export default [
     id: 'feed-animals',
     title: 'One each',
     strand: 'counting',
+    skill: 'Counting out',
+    needs: ['Duplo bricks or cubes for dinners'],
     toys: ['animals'],
     minutes: 4,
     research: ['gelman1978', 'devmatters'],
@@ -99,7 +105,7 @@ export default [
           numQ(r, 'One more animal comes for dinner. How many dinners do we need now?', n + 1),
         ],
         look: ['Does every animal get exactly one?', 'Does he know how many dinners without recounting, because he counted the animals?'],
-        easier: 'Use 2 or 3 animals.',
+        easier: lv(level, 'Use 2 animals.', 'Use 2 or 3 animals.'),
         harder: 'Ask him to fetch the right number of dinners in one trip.',
         words: ['one each', 'enough', 'the same number'],
       };
@@ -110,13 +116,18 @@ export default [
     id: 'quick-look',
     title: 'Quick look',
     strand: 'counting',
+    skill: 'Seeing without counting',
+    needs: [],
     toys: [],
     minutes: 2,
     research: ['clements1999', 'devmatters'],
     why: 'Seeing "three" at a glance without counting is called subitising. It is one of the first things on the 3-and-4-year-old maths list.',
     make(r, level) {
+      let last = 0;
       const one = () => {
-        const n = r.int(...lv(level, [1, 3], [1, 5], [3, 6]));
+        let n;
+        do n = r.int(...lv(level, [1, 3], [1, 5], [3, 6])); while (n === last); // never the same number twice running
+        last = n;
         const how = level === 1 ? 'dice' : level === 2 ? r.pick(['dice', 'line']) : r.pick(['dice', 'loose', 'pairs']);
         const d = dots(n, how, r);
         return {
@@ -131,7 +142,7 @@ export default [
         ...one(),
         more: [one(), one()],
         look: ['Is the answer quick? Quick means he saw it. Slow usually means he counted in his head.'],
-        easier: 'Keep to 1, 2 and 3.',
+        easier: lv(level, 'Keep to 1 and 2.', 'Keep to 1, 2 and 3.'),
         harder: 'Do it with real toys: put a few under a tea towel, lift it for a moment, cover them again.',
         words: ['how many'],
       };
@@ -142,6 +153,8 @@ export default [
     id: 'count-tower',
     title: 'Count up the tower',
     strand: 'counting',
+    skill: 'Counting things',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
     research: ['gelman1978', 'devmatters'],
@@ -174,6 +187,8 @@ export default [
     id: 'count-wagons',
     title: 'How many wagons?',
     strand: 'counting',
+    skill: 'Counting things',
+    needs: ['Bricks or cubes to load'],
     toys: ['brio'],
     minutes: 3,
     research: ['gelman1978', 'gunderson2011'],
@@ -182,6 +197,7 @@ export default [
       const n = r.int(...lv(level, [1, 3], [2, 5], [4, 6]));
       const loaded = times(n, () => level === 3 && r.bool(0.45));
       if (level === 3 && !loaded.some(Boolean)) loaded[r.int(0, n - 1)] = true;
+      if (level === 3 && loaded.every(Boolean)) loaded[r.int(0, n - 1)] = false;
       const ws = loaded.map((l) => wagon(level < 3 || l ? cube(r.pick(MORE_COLOURS)) : null, r.pick(['blue', 'green', 'yellow'])));
       const full = loaded.filter(Boolean).length;
       const value = level === 3 ? full : n;
@@ -195,8 +211,8 @@ export default [
           ? [numQ(r, 'How many wagons altogether, full and empty?', n)]
           : [numQ(r, 'Unhook the last wagon. How many is the engine pulling now?', n - 1, undefined, { min: 0 }), numQ(r, 'Hook it back on, and one more. How many now?', n + 1)])],
         look: ['Does he leave out the engine? If he counts it, ask "is that one a wagon?"'],
-        easier: 'One or two wagons.',
-        harder: 'Leave some wagons empty and ask how many are carrying something.',
+        easier: lv(level, 'One or two wagons.', 'One or two wagons.', 'Put something on every wagon and count them all.'),
+        harder: lv(level, 'Leave some wagons empty and ask how many are carrying something.', 'Leave some wagons empty and ask how many are carrying something.', 'Ask how many wagons are empty.'),
         words: ['how many', 'empty', 'full'],
       };
     },
@@ -206,6 +222,8 @@ export default [
     id: 'one-more',
     title: 'One more',
     strand: 'counting',
+    skill: 'One more',
+    needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
     research: ['sarnecka2008', 'devmatters'],
@@ -215,16 +233,19 @@ export default [
       const fewer = level === 3 && r.bool(0.4);
       const c = r.pick(BRICK_COLOURS);
       const value = fewer ? n - 1 : n + 1;
+      const before = times(n, () => c);
+      const after = fewer ? before.slice(1) : [...before, 'yellow'];
+      const scene = (bricks) => ({ sprite: row([tower(bricks), text(fewer ? 'take 1 off' : 'and 1 more', 12, { bold: true }), fewer ? arrow(24) : duplo('yellow')], { gap: 10, align: 'middle' }) });
       return {
         setup: [`Build a tower of ${n}. Count it together so you both agree it is ${n}.`, fewer ? 'Hold your hand ready to take the top one off.' : 'Hold one more brick in your hand.'],
-        scenes: [{ sprite: row([tower(times(n, () => c)), text(fewer ? 'take 1 off' : 'and 1 more', 12, { bold: true }), fewer ? arrow(24) : duplo('yellow')], { gap: 10, align: 'middle' }) }],
+        scenes: [scene(before)],
         ask: fewer ? `There are ${n}. If I take one off, how many will there be?` : `There are ${n}. If I put one more on, how many will there be?`,
         answer: { type: 'number', value, choices: choices(r, value, { min: 0 }) },
-        reveal: { caption: `${value}. Do it and count to check.`, sprite: tower(fewer ? times(n - 1, () => c) : [...times(n, () => c), 'yellow']) },
-        more: [fewer ? numQ(r, 'And if I take one more off?', value - 1) : numQ(r, 'And one more again?', value + 1)],
+        reveal: { caption: `${value}. Do it and count to check.`, sprite: tower(after) },
+        more: [{ ...(fewer ? numQ(r, 'And if I take one more off?', value - 1) : numQ(r, 'And one more again?', value + 1)), scenes: [scene(after)] }],
         look: ['Does he answer straight away, or need to count from 1 again? Both are fine. Straight away shows he knows what comes next.'],
-        easier: 'Start from 1 or 2.',
-        harder: 'Ask before he sees the tower: "I have 5. One more makes…?"',
+        easier: lv(level, 'Start from 1.', 'Start from 1 or 2.'),
+        harder: `Ask before he sees the tower: "I have ${n}. One more makes…?"`,
         words: ['one more', 'one fewer', 'next'],
       };
     },
@@ -234,6 +255,8 @@ export default [
     id: 'numicon-holes',
     title: 'Fill the holes',
     strand: 'counting',
+    skill: 'Counting out',
+    needs: ['Numicon pegs or small cubes'],
     toys: ['numicon'],
     minutes: 3,
     research: ['eef2020', 'gelman1978'],
@@ -248,7 +271,7 @@ export default [
         reveal: { caption: `${n} holes, ${n} pegs. This is the ${n} shape.` },
         more: [numQ(r, 'Take one peg out. How many pegs are left?', n - 1, undefined, { min: 0, max: 10 })],
         look: ['Does he count the pegs or the holes? Either works, and it is worth noticing they match.'],
-        easier: 'Use the 1, 2, 3 and 4 shapes.',
+        easier: lv(level, 'Use the 1 and 2 shapes.', 'Use the 1, 2, 3 and 4 shapes.'),
         harder: 'Hide the shape in a bag and let him feel how many holes before he looks.',
         words: ['how many', 'one in each', 'the same number'],
       };
@@ -259,13 +282,18 @@ export default [
     id: 'count-sounds',
     title: 'Listen and count',
     strand: 'counting',
+    skill: 'Counting things',
+    needs: ['A tin or saucepan', 'A handful of bricks'],
     toys: [],
     minutes: 2,
     research: ['gelman1978', 'devmatters'],
     why: 'Anything can be counted, including sounds you cannot see or touch.',
     make(r, level) {
+      let last = 0;
       const one = (first) => {
-        const n = r.int(...lv(level, [1, 3], [2, 5], [4, 7]));
+        let n;
+        do n = r.int(...lv(level, [1, 3], [2, 5], [4, 7])); while (n === last); // never the same number twice running
+        last = n;
         return {
           note: `${first ? '' : 'Tip them out. '}Eyes closed. Drop ${plural(n, 'brick', 'bricks')} in, slowly, one at a time.`,
           scenes: [{ sprite: row([flow(times(n, () => duplo('red')), { maxW: 150, gap: 4 }), arrow(26), frame(text('clonk', 13, { bold: true }), { label: 'tin', pad: 10 })], { gap: 10, align: 'middle' }) }],
@@ -290,6 +318,8 @@ export default [
     id: 'spot-mistake',
     title: 'Did Teddy count right?',
     strand: 'counting',
+    skill: 'Counting things',
+    needs: ['A teddy or toy animal'],
     toys: ANY,
     minutes: 4,
     research: ['gelmanmeck1983', 'gelman1978'],
@@ -348,7 +378,7 @@ export default [
         more: rest,
         look: ['Can he say what went wrong, not just that something did?'],
         easier: 'Make the mistake big and slow: skip a toy with a pause.',
-        harder: 'Have Teddy start at the other end and count correctly. Is that allowed? (It is.)',
+        harder: lv(level, 'Have Teddy start at the other end and count correctly. Is that allowed? (It is.)', 'Have Teddy start at the other end and count correctly. Is that allowed? (It is.)', 'Use more toys, and make the mistake quick and quiet.'),
         words: ['each one', 'once', 'missed', 'twice'],
       };
     },
@@ -358,6 +388,8 @@ export default [
     id: 'count-back',
     title: 'Blast off',
     strand: 'counting',
+    skill: 'One more',
+    needs: [],
     toys: ['duplo', 'cubes'],
     levels: [2, 3],
     minutes: 3,
@@ -372,7 +404,7 @@ export default [
         ask: `Let's count down and take one off each time. ${times(n, (i) => n - i).join(', ')}… blast off!`,
         answer: { type: 'do' },
         look: ['Can he say the next number down before you do?', 'After a few goes, pause and ask "how many are left now?"'],
-        easier: 'Start from 3.',
+        easier: lv(level, 'Start from 2.', 'Start from 2.', 'Start from 5.'),
         harder: 'Stop part-way and ask how many are left without counting.',
         words: ['one fewer', 'left', 'none'],
       };
@@ -383,6 +415,8 @@ export default [
     id: 'any-order',
     title: 'Start anywhere',
     strand: 'counting',
+    skill: 'Counting things',
+    needs: [],
     toys: ANY,
     minutes: 3,
     research: ['gelman1978'],
@@ -392,7 +426,7 @@ export default [
       const n = r.int(...lv(level, [3, 3], [4, 5], [6, 8]));
       const picks = r.shuffle(toy.vary).slice(0, Math.min(n, toy.vary.length));
       const items = times(n, (i) => toy.make(r, picks[i % picks.length]));
-      const start = r.int(1, n - 1);
+      const start = r.int(1, n - 2); // a toy in the middle, never an end
       const order = times(n, (i) => ((i - start + n) % n) + 1);
       return {
         setup: [`Line up ${plural(n, toy.one, toy.many)}. Count them together from one end.`],
@@ -405,8 +439,8 @@ export default [
           { ask: `Now push them close together. Is it still ${n}?`, answer: { type: 'pick', options: [{ key: 'yes', label: `Still ${n}` }, { key: 'no', label: 'A different number' }], correct: 'yes' }, reveal: { caption: `Still ${n}.` } },
         ],
         look: ['Does he predict, or does he need to count to find out? Needing to count is normal at this age.'],
-        easier: 'Use 3 toys.',
-        harder: 'Spread the toys far apart, or push them close together. Still the same number?',
+        easier: lv(level, 'Count from one end, then from the other end.', 'Use 3 toys.'),
+        harder: 'Jumble them into a heap. Still the same number?',
         words: ['still', 'the same', 'altogether'],
       };
     },
@@ -415,6 +449,8 @@ export default [
     id: 'load-wagons',
     title: 'Load the train',
     strand: 'counting',
+    skill: 'Counting out',
+    needs: ['Cubes or small bricks for parcels'],
     toys: ['brio'],
     minutes: 4,
     research: ['gelman1978', 'devmatters'],
@@ -430,10 +466,10 @@ export default [
         reveal: { caption: `${n} wagons, so ${n} parcels. One each.`, sprite: train(cols.map((c) => wagon(cube('red'), c))) },
         more: [
           numQ(r, 'The engine leaves the last wagon behind. How many parcels are on the train now?', n - 1, undefined, { min: 0 }),
-          numQ(r, 'Put a second parcel on the first wagon. How many parcels now?', n),
+          numQ(r, 'Put a second parcel on the first wagon. How many parcels are on the train now?', n, `${n}. The ${n - 1} on the train and one more.`),
         ],
         look: ['Does he fetch the right number in one go, or one at a time?'],
-        easier: 'Two wagons.',
+        easier: lv(level, 'One or two wagons.', 'Two wagons.'),
         harder: 'Two parcels on every wagon. How many altogether?',
         words: ['one each', 'how many', 'enough', 'empty', 'full'],
       };

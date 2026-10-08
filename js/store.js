@@ -2,24 +2,25 @@
 // Everything is kept in this phone's browser storage. Nothing is sent anywhere,
 // including the children's names.
 
-import { ACTIVITIES, STRANDS, TOYS, byId, levelsOf } from './activities/index.js';
+import { ACTIVITIES, TOYS } from './activities/index.js';
 
 const KEY = 'toybox-maths-v2';
 const fresh = () => ({
   v: 2,
   current: null, // id of the child who is playing
   children: [], // see newChild() below
-  settings: { theme: 'system', sound: true, motion: true, stars: 3, toys: TOYS.map((t) => t.id) },
+  // questions / goes: how many were chosen last time, offered again next time
+  settings: { theme: 'system', sound: true, motion: true, questions: 5, goes: 1, toys: TOYS.map((t) => t.id) },
 });
 const newChild = (name, animal, pronoun) => ({
   id: 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
   name,
   animal, // which drawn animal is this child's mascot
-  pronoun, // 'he', 'she' or 'they': how the activity text talks about them
+  pronoun, // 'he' or 'she': how the activity text talks about them
   stars: 0, // every star ever earned
-  strands: {}, // strand id -> { level: 1-3, score: running tally of easy/hard }
-  acts: {}, // activity id -> { n: times played, last: { t, rating, level } }
-  log: [], // most recent first: { id, t, rating, level, stars }
+  acts: {}, // activity id -> { n: times played, last: { t, rating, mode } }
+  log: [], // most recent first: { id, t, rating, mode, stars, asked }
+  // mode is '1', '2' or '3' (Easy, Medium, Hard), 'mix' or 'ramp'. Records from before October 2026 have a number, `level`, instead.
 });
 
 let state = fresh();
@@ -28,6 +29,7 @@ try {
   if (raw) {
     const saved = JSON.parse(raw);
     state = { ...fresh(), ...saved, settings: { ...fresh().settings, ...saved.settings } };
+    for (const c of state.children) if (c.pronoun !== 'she') c.pronoun = 'he'; // "they" was removed
   }
 } catch {
   /* private mode or storage blocked: carry on without saving */
@@ -74,20 +76,7 @@ export function set(key, value) {
 export const playable = (a) => a.toys.length === 0 || a.toys.some((t) => state.settings.toys.includes(t));
 
 // ---------------------------------------------------------------- progress (for the current child)
-export const strandState = (id) => child()?.strands[id] || { level: 1, score: 0 };
 export const actState = (id) => child()?.acts[id] || { n: 0, last: null };
-
-export function setStrandLevel(id, level) {
-  child().strands[id] = { level, score: 0 };
-  save();
-}
-
-// The step to open an activity at: its strand's step, or the nearest one it supports.
-export function levelFor(a) {
-  const want = strandState(a.strand).level;
-  const ls = levelsOf(a);
-  return ls.includes(want) ? want : ls.reduce((best, l) => (Math.abs(l - want) < Math.abs(best - want) ? l : best), ls[0]);
-}
 
 export const RATINGS = [
   { id: 'easy', label: 'Too easy' },
@@ -96,36 +85,28 @@ export const RATINGS = [
   { id: 'skip', label: 'Not today' },
 ];
 
-// Record how an activity went. Two "too easy" in a row in one strand moves that
-// strand up a step; two "too tricky" in a row moves it down. Returns a message if it moved.
-export function rate(id, rating, level, stars = 0) {
+// Record how a turn went: how the adult rated it, the difficulty played, stars won and questions asked.
+export function rate(id, rating, mode, stars = 0, asked = 0) {
   const c = child();
-  const a = byId[id];
   const t = Date.now();
-  c.acts[id] = { n: actState(id).n + 1, last: { t, rating, level } };
-  c.log.unshift({ id, t, rating, level, stars });
+  c.acts[id] = { n: actState(id).n + 1, last: { t, rating, mode } };
+  c.log.unshift({ id, t, rating, mode, stars, asked });
   c.log = c.log.slice(0, 200);
   c.stars += stars;
-  let moved = null;
-  const s = { ...strandState(a.strand) };
-  if (level === s.level) {
-    if (rating === 'easy') s.score = Math.max(s.score, 0) + 1;
-    else if (rating === 'hard') s.score = Math.min(s.score, 0) - 1;
-    else if (rating === 'right') s.score = 0;
-    const name = STRANDS.find((x) => x.id === a.strand).name;
-    if (s.score >= 2 && s.level < 3) {
-      s.level++;
-      s.score = 0;
-      moved = `${name} moves up to step ${s.level}`;
-    } else if (s.score <= -2 && s.level > 1) {
-      s.level--;
-      s.score = 0;
-      moved = `${name} drops back to step ${s.level}`;
-    }
-    c.strands[a.strand] = s;
-  }
   save();
-  return moved;
+}
+
+// The difficulty to offer when an activity is opened. `modes` is what it supports, easiest first
+// (e.g. ['1', '2', '3', 'mix', 'ramp']). First time: the easiest. After that: the same as last time,
+// one harder if that was "too easy", one easier if it was "too tricky".
+export function suggest(a, modes) {
+  const last = actState(a.id).last;
+  if (!last) return modes[0];
+  const was = String(last.mode ?? last.level);
+  const fixed = modes.filter((m) => m !== 'mix' && m !== 'ramp');
+  if (!fixed.includes(was)) return modes.includes(was) ? was : modes[0];
+  const i = fixed.indexOf(was) + (last.rating === 'easy' ? 1 : last.rating === 'hard' ? -1 : 0);
+  return fixed[Math.max(0, Math.min(fixed.length - 1, i))];
 }
 
 const DAY = 86400000;
@@ -133,10 +114,9 @@ const dayOf = (t) => Math.floor((t - new Date().getTimezoneOffset() * 60000) / D
 
 // How keen the picker is on each activity.
 function weight(a) {
-  if (!levelsOf(a).includes(strandState(a.strand).level)) return 0.2; // not at this child's step: unlikely, not impossible
   const last = actState(a.id).last;
   if (!last) return 3; // never tried: most interesting
-  let w = { right: 2, easy: strandState(a.strand).level === 3 ? 0.5 : 1, hard: 0.6, skip: 1 }[last.rating] ?? 1;
+  let w = { right: 2, easy: 1, hard: 0.6, skip: 1 }[last.rating] ?? 1;
   if (dayOf(last.t) === dayOf(Date.now())) w *= 0.15; // already done today
   return w;
 }
@@ -156,5 +136,5 @@ export function pick(pool = ACTIVITIES, not = null) {
 
 export function strandSummary(id) {
   const acts = ACTIVITIES.filter((a) => a.strand === id);
-  return { total: acts.length, tried: acts.filter((a) => actState(a.id).n > 0).length, level: strandState(id).level };
+  return { total: acts.length, tried: acts.filter((a) => actState(a.id).n > 0).length };
 }

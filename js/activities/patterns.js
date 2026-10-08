@@ -1,7 +1,7 @@
 // Patterns: copying, continuing, fixing and describing things that repeat.
 import {
   A, lv, times, choices, pickToy, list, an, cap, numQ,
-  flow, row, column, rod, cube, duplo, hit, qbox, frame, text, scatter, ring, wagon, engine, onTrack, flip,
+  flow, row, column, rod, cube, duplo, hit, qbox, frame, text, scatter, scale, ring, wagon, engine, onTrack, flip,
   FARM, BRICK_COLOURS, MORE_COLOURS,
 } from './kit.js';
 
@@ -39,6 +39,8 @@ export default [
     id: 'pattern-next',
     title: 'What comes next?',
     strand: 'patterns',
+    skill: 'What comes next',
+    needs: [],
     toys: ALL,
     minutes: 3,
     research: ['rittle2013', 'devmatters', 'rittle2019'],
@@ -57,10 +59,11 @@ export default [
         reveal: { caption: `${cap(an(m.full(next)))}. The pattern goes ${say(m, unit)}, over and over.`, sprite: line(m, [...seq, next], { wrap: (s, i) => (i === len ? ring(s) : s) }) },
         more: [...[1, 2].map((j) => {
           const nx = unit[(len + j) % unit.length];
-          return { ask: 'And what comes after that?', answer: { type: 'pick', options: r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: m.el(i) })), correct: String(nx) }, reveal: { caption: `${cap(an(m.full(nx)))}.` } };
+          const shown = row([line(m, seqOf(unit, len + j)), qbox(34, 34)], { gap: 6, align: 'middle' });
+          return { ask: 'And what comes after that?', scenes: [{ sprite: shown.w > 500 ? scale(shown, 500 / shown.w) : shown }], answer: { type: 'pick', options: r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: m.el(i) })), correct: String(nx) }, reveal: { caption: `${cap(an(m.full(nx)))}.` } };
         })],
         look: ['Does he say the pattern aloud to work it out? That is the strategy to encourage.'],
-        easier: 'Use two colours taking turns, and show lots of repeats.',
+        easier: lv(level, 'Say it aloud together again and let him finish the last word.', 'Use two colours taking turns, and show lots of repeats.'),
         harder: 'Let him carry on for five or six more without help.',
         words: ['pattern', 'next', 'again', 'repeat'],
       };
@@ -71,6 +74,8 @@ export default [
     id: 'pattern-fix',
     title: 'Spot my mistake',
     strand: 'patterns',
+    skill: 'Spotting the rule',
+    needs: [],
     toys: ALL,
     minutes: 3,
     research: ['devmatters', 'rittle2013'],
@@ -94,7 +99,7 @@ export default [
         answer: { type: 'tap', correct: [String(e)] },
         reveal: { caption: `It should be ${an(m.full(right))}, not ${an(m.full(wrong))}. Ask him to swap it.`, sprite: line(m, seq, { wrap: (s, i) => (i === e ? ring(s) : s) }) },
         look: ['Does he read along from the start to find it?', 'Can he fix it as well as find it?'],
-        easier: 'Put in a colour that does not belong at all.',
+        easier: lv(level, 'Point along the row and say it together until one sounds wrong.', 'Put in a colour that does not belong at all.'),
         harder: 'Make two mistakes.',
         words: ['pattern', 'mistake', 'should be', 'instead'],
       };
@@ -105,6 +110,8 @@ export default [
     id: 'pattern-copy',
     title: 'Copy my pattern',
     strand: 'patterns',
+    skill: 'Copying and making',
+    needs: [],
     toys: ALL,
     minutes: 4,
     research: ['rittle2013', 'devmatters'],
@@ -120,7 +127,7 @@ export default [
         ask: 'Can you make one just like mine, underneath?',
         answer: { type: 'do' },
         look: ['Does he match piece by piece under yours, or look and build from memory?', 'When he has finished, ask him to keep it going.'],
-        easier: 'Two colours taking turns.',
+        easier: lv(level, 'Build it together, one piece each in turn.', 'Two colours taking turns.'),
         harder: 'Show it, cover it, and see if he can rebuild it.',
         words: ['pattern', 'the same', 'next'],
       };
@@ -131,6 +138,8 @@ export default [
     id: 'pattern-translate',
     title: 'Same pattern, different toys',
     strand: 'patterns',
+    skill: 'Copying and making',
+    needs: ['A second kind of toy, such as animals or blocks'],
     toys: ALL,
     levels: [2, 3],
     minutes: 5,
@@ -142,7 +151,10 @@ export default [
       const m = medium(r, ctx, 6);
       const seq = seqOf(unit, len);
       const kinds = [...new Set(unit)].length;
-      const other = r.pick(kinds === 2 ? ['a car and an animal taking turns', 'big blocks and small blocks', 'claps and stomps', 'two other colours'] : ['three different animals', 'three other colours', 'a clap, a stomp and a jump']);
+      const beasts = m.toy.id === 'animals';
+      const other = r.pick(kinds === 2
+        ? ['big blocks and small blocks', 'claps and stomps', beasts ? 'two colours of brick' : 'two other colours', ...(beasts || m.toy.id === 'cars' ? [] : ['cars and animals'])]
+        : ['a clap, a stomp and a jump', ...(beasts ? ['three colours of brick'] : ['three different animals', 'three other colours'])]);
       const letters = row(seq.map((v) => frame(text(LETTERS[v], 14, { bold: true }), { pad: 5, minW: 24 })), { gap: 4 });
       return {
         setup: [`Make this row with ${m.things}: ${say(m, seq)}.`, 'Say it aloud together first.'],
@@ -162,6 +174,8 @@ export default [
     id: 'pattern-missing',
     title: 'Fill the gap',
     strand: 'patterns',
+    skill: 'Spotting the rule',
+    needs: [],
     toys: ALL,
     minutes: 3,
     research: ['rittle2013', 'devmatters'],
@@ -174,7 +188,7 @@ export default [
       const g = r.int(unit.length, len - 2);
       const sample = m.el(0);
       return {
-        setup: [`Lay out this row with ${m.things}, leaving a gap where the box is: ${say(m, seq)}.`],
+        setup: [`Lay out this row with ${m.things}, leaving a gap where the box is: ${seq.map((v, i) => (i === g ? '(gap)' : m.name(v))).join(', ')}.`],
         scenes: [{ sprite: row(seq.map((v, i) => (i === g ? qbox(Math.max(22, sample.w), Math.max(22, sample.h)) : m.el(v))), { gap: 4, align: 'bottom' }) }],
         ask: 'One piece is missing. Which one goes in the gap?',
         answer: { type: 'pick', options: r.shuffle([0, 1, 2]).map((i) => ({ key: String(i), sprite: m.el(i) })), correct: String(seq[g]) },
@@ -191,6 +205,8 @@ export default [
     id: 'staircase',
     title: 'Staircase',
     strand: 'patterns',
+    skill: 'What comes next',
+    needs: [],
     toys: ['cubes', 'duplo', 'numicon'],
     levels: [2, 3],
     minutes: 4,
@@ -198,7 +214,7 @@ export default [
     why: 'A staircase is a pattern that grows. Each step is one more than the last, which is the same idea as counting.',
     make(r, level) {
       const step = level === 3 && r.bool(0.5) ? 2 : 1;
-      const down = level === 3 && step === 1 && r.bool(0.4);
+      const down = level === 3 && step === 1;
       const start = down ? r.int(5, 6) : r.int(1, 2);
       const hs = times(3, (i) => start + (down ? -i : i * step));
       const next = start + (down ? -3 : 3 * step);
@@ -210,10 +226,10 @@ export default [
         ask: 'How many will be in the next tower?',
         answer: { type: 'number', value: next, choices: choices(r, next, { min: 0 }) },
         reveal: { caption: `${next}. Each tower is ${step === 2 ? 'two' : 'one'} ${down ? 'fewer' : 'more'} than the one before.`, sprite: stair([...hs, next]) },
-        more: [numQ(r, 'And the tower after that?', next + (down ? -1 : step))],
+        more: [{ ...numQ(r, 'And the tower after that?', next + (down ? -1 : step)), scenes: [{ sprite: row([stair([...hs, next]), qbox(22, 40)], { gap: 8 }) }] }],
         look: ['Can he say what is changing each time?', 'Walk a toy up the stairs, counting each step.'],
         easier: 'Start with 1, 2, 3 and build the 4 together.',
-        harder: 'Build a staircase that goes down, or up in twos.',
+        harder: lv(level, 'Build a staircase that goes down, or up in twos.', 'Build a staircase that goes down, or up in twos.', 'Let him build the next three towers on his own.'),
         words: ['one more', 'bigger', 'next', 'steps'],
       };
     },
@@ -223,6 +239,8 @@ export default [
     id: 'action-pattern',
     title: 'Clap, stomp',
     strand: 'patterns',
+    skill: 'What comes next',
+    needs: [],
     toys: [],
     minutes: 2,
     research: ['rittle2013', 'devmatters'],
@@ -237,7 +255,7 @@ export default [
         ask: `Watch me: ${seq.map((v) => acts[v]).join(', ')}… now you carry it on!`,
         answer: { type: 'do' },
         look: ['Can he keep it going for three or four more rounds?', 'Can he make up one for you to copy?'],
-        easier: 'Two actions taking turns.',
+        easier: lv(level, 'Do it together, holding hands, before he tries alone.', 'Two actions taking turns.'),
         harder: 'Build the same pattern with bricks afterwards.',
         words: ['pattern', 'again', 'next'],
       };
@@ -248,6 +266,8 @@ export default [
     id: 'pattern-unit',
     title: 'Which bit repeats?',
     strand: 'patterns',
+    skill: 'Spotting the rule',
+    needs: [],
     toys: SMALL,
     levels: [3],
     minutes: 3,
@@ -277,6 +297,8 @@ export default [
     id: 'pattern-make',
     title: 'Your turn to make one',
     strand: 'patterns',
+    skill: 'Copying and making',
+    needs: [],
     toys: ALL,
     minutes: 5,
     research: ['devmatters', 'weisberg2013'],
@@ -293,7 +315,7 @@ export default [
         answer: { type: 'open' },
         look: ['Is it a real repeat, or a pretty row? Ask him to "read" it to you.', 'Copy it, and make one mistake on purpose for him to catch.'],
         easier: 'Start the first two pieces for him.',
-        harder: 'Ask for a pattern with three things, or one where a colour comes twice.',
+        harder: lv(level, 'Ask for a pattern with three things, or one where a colour comes twice.', 'Ask for a pattern with three things, or one where a colour comes twice.', 'Ask for a pattern where one thing comes twice in a row.'),
         words: ['pattern', 'repeat', 'my turn', 'your turn'],
       };
     },
@@ -302,6 +324,8 @@ export default [
     id: 'pattern-train',
     title: 'Pattern train',
     strand: 'patterns',
+    skill: 'What comes next',
+    needs: ['Cubes or small bricks in three colours', 'Two spare wagons'],
     toys: ['brio'],
     minutes: 4,
     research: ['rittle2013', 'devmatters'],
@@ -321,7 +345,7 @@ export default [
         ...question(len, 'What colour goes on the empty wagon?'),
         more: [question(len + 1, 'Hook on another wagon. What colour goes on that one?'), question(len + 2, 'And the next one?')],
         look: ['Does he say the colours aloud along the train to work it out?'],
-        easier: 'Two colours taking turns.',
+        easier: lv(level, 'Say the colours aloud along the train together first.', 'Two colours taking turns.'),
         harder: 'Let him load a pattern train for you to finish.',
         words: ['pattern', 'next', 'again', 'repeat'],
       };

@@ -104,6 +104,8 @@ export default [
     id: 'copy-duplo',
     title: 'Copy my model',
     strand: 'building',
+    skill: 'Copying a model',
+    needs: [],
     toys: ['duplo'],
     minutes: 5,
     research: ['verdine2014', 'ferrara2011'],
@@ -116,7 +118,7 @@ export default [
         scenes: [{ caption: 'Seen from the front', sprite: model(m) }],
         ask: 'Can you build one exactly like this?',
         answer: { type: 'do' },
-        more: [numQ(r, 'How many bricks did you use?', m.length), numQ(r, `How many of them are ${m[0].colour}?`, m.filter((b) => b.colour === m[0].colour).length)],
+        more: [numQ(r, 'How many bricks did you use?', m.length, undefined, { min: 1 }), numQ(r, `How many of them are ${m[0].colour}?`, m.filter((b) => b.colour === m[0].colour).length)],
         look: ['Does he check back against the model as he goes?', 'Which goes wrong first: the colours, or where a brick sits? Position is the harder part.', 'Talk as he builds: "on top", "sticking out", "next to", "in the middle".'],
         easier: 'Two bricks, one straight on top of the other.',
         harder: 'Show the picture for ten seconds, hide it, and let him build from memory.',
@@ -129,6 +131,8 @@ export default [
     id: 'copy-wooden',
     title: 'Copy my building',
     strand: 'building',
+    skill: 'Copying a model',
+    needs: [],
     toys: ['wooden'],
     minutes: 5,
     research: ['verdine2014', 'casey2008', 'devmatters'],
@@ -140,9 +144,9 @@ export default [
         scenes: [{ caption: 'Seen from the front', sprite: build(blocks) }],
         ask: 'Can you build one like this?',
         answer: { type: 'do' },
-        more: [numQ(r, 'How many blocks did you use?', blocks.length)],
+        more: [numQ(r, 'How many blocks did you use?', blocks.length, undefined, { min: 1 })],
         look: ['Does he pick the right shape for each place?', 'When it falls, does he change something or try the same again? Ask "what could we change?"'],
-        easier: 'Two blocks, one on top of the other.',
+        easier: lv(level, 'Build it with him once, knock it down, and let him try alone.', 'Two blocks, one on top of the other.', 'Two blocks, one on top of the other.'),
         harder: 'Ask him to build it again from the other side of the table, so it faces you.',
         words: ['on top of', 'across', 'balance', 'flat', 'pointy'],
       };
@@ -153,17 +157,19 @@ export default [
     id: 'bridge',
     title: 'Build a bridge',
     strand: 'building',
+    skill: 'Building challenges',
+    needs: ['A toy car, train or animal to go under'],
     toys: ['wooden', 'duplo'],
     minutes: 6,
     research: ['casey2008', 'ferrara2011', 'devmatters'],
     why: 'Building to a goal inside a little story gave the best spatial results in a block-building study, and brings out far more position words than free play.',
     make(r, level, ctx) {
-      const goer = has(ctx, 'brio') && r.bool(0.4) ? { name: 'train', s: engine() } : has(ctx, 'cars') || !has(ctx, 'animals') ? { name: 'car', s: car(r.pick(MORE_COLOURS)) } : { name: 'cow', s: animal('cow') };
+      const goer = has(ctx, 'brio') && r.bool(0.4) ? { name: 'train', go: 'drive', s: engine() } : has(ctx, 'cars') || !has(ctx, 'animals') ? { name: 'car', go: 'drive', s: car(r.pick(MORE_COLOURS)) } : { name: 'cow', go: 'walk', s: animal('cow') };
       const job = lv(
         level,
         [`The ${goer.name} needs to get to the other side. Can you build a bridge it can go under?`],
         [`Can you build a bridge wide enough for two ${goer.name}s to go under side by side?`, `Can you build a bridge the ${goer.name} can go under AND another toy can stand on top?`],
-        ['Can you build a bridge tall enough for the tallest toy we have to walk under?', `Can you build a bridge with a road going up to it, so the ${goer.name} can drive over the top?`]
+        ['Can you build a bridge tall enough for the tallest toy we have to walk under?', `Can you build a bridge with a road going up to it, so the ${goer.name} can ${goer.go} over the top?`]
       );
       const posts = 'pillar';
       const sketch = layer([
@@ -175,9 +181,9 @@ export default [
         scenes: [{ caption: 'One way to start', sprite: sketch }],
         ask: r.pick(job),
         answer: { type: 'open' },
-        look: ['Does he test it by driving the toy through?', 'If it does not fit, does he change the height or the gap?', 'Hold back from fixing it. Ask "what is stopping it?"'],
+        look: ['Does he test it by sending the toy through?', 'If it does not fit, does he change the height or the gap?', 'Hold back from fixing it. Ask "what is stopping it?"'],
         easier: 'Build the two posts for him and let him find the piece to go across.',
-        harder: 'Make it wider, taller, or strong enough to hold a toy on top.',
+        harder: lv(level, 'Make it wider, taller, or strong enough to hold a toy on top.', 'Make it long enough to cross a book laid flat.', 'Make it long enough to cross a book laid flat.'),
         words: ['under', 'over', 'across', 'wide', 'tall', 'gap'],
       };
     },
@@ -187,25 +193,26 @@ export default [
     id: 'tall-as',
     title: 'As tall as…',
     strand: 'building',
+    skill: 'Building challenges',
+    needs: ['A mug, bottle or shoe to measure against'],
     toys: ['duplo', 'wooden', 'cubes'],
     minutes: 5,
     research: ['devmatters', 'ncetm'],
     why: 'Building to match a height is measuring before rulers: he has to compare, adjust, and decide when it is "the same".',
     make(r, level, ctx) {
-      const things = [
-        has(ctx, 'animals') && { name: 'the tallest animal', s: animal('giraffe') },
-        { name: 'a mug', s: prop('mug', 40, 52) },
-        { name: 'this phone standing on its end', s: prop('phone', 34, 70) },
-        { name: 'a shoe standing on its heel', s: prop('shoe', 36, 80) },
-        level > 1 && { name: 'his knee', s: prop('knee', 30, 96) },
-        level === 3 && { name: 'the seat of a chair', s: prop('chair seat', 60, 110) },
-      ].filter(Boolean);
-      const { name: thing, s: thingPic } = r.pick(things);
+      const things = lv(
+        level,
+        [has(ctx, 'animals') && { say: 'the tallest animal', set: 'Stand the tallest animal on the floor or table.', s: animal('giraffe') }, { say: 'the mug', set: 'Stand a mug on the floor or table.', s: prop('mug', 40, 52) }],
+        [{ say: 'the bottle', set: 'Stand a drinks bottle on the floor or table.', s: prop('bottle', 30, 76) }, { say: 'the shoe', set: 'Prop a shoe up on its heel against a wall.', s: prop('shoe', 36, 80) }],
+        [{ say: 'your knee', set: 'Ask him to stand up straight on the floor.', near: 'him', s: prop('knee', 30, 96) }, { say: 'the seat of the chair', set: 'Find a chair he can stand next to.', s: prop('chair seat', 60, 110) }]
+      ).filter(Boolean);
+      const { say: thing, set, near, s: thingPic } = r.pick(things);
       return {
-        setup: [`Stand ${thing} on the floor or table.`, 'Put a pile of bricks next to it.'],
+        setup: [set, `Put a pile of bricks next to ${near || 'it'}.`],
         scenes: [{ sprite: row([thingPic, model(times(3, (i) => ({ x: 0, y: i, w: 2, colour: BRICK_COLOURS[i] }))), qbox(36, 30)], { gap: 12 }) }],
-        ask: `Can you build a tower exactly as tall as ${thing}? How many bricks did it take?`,
+        ask: `Can you build a tower as tall as ${thing}?`,
         answer: { type: 'open' },
+        more: [{ ask: 'How many bricks tall is your tower?', answer: { type: 'open' }, reveal: { caption: 'Count them together, touching each brick from the bottom up.' } }],
         look: ['Does he stand the tower right next to it to check?', 'Does he notice when one more brick makes it too tall?'],
         easier: 'Pick something short: two or three bricks high.',
         harder: 'Ask him to guess how many bricks before he starts.',
@@ -218,6 +225,8 @@ export default [
     id: 'spot-difference',
     title: 'What did I change?',
     strand: 'building',
+    skill: 'Copying a model',
+    needs: [],
     toys: ['duplo'],
     minutes: 3,
     research: ['verdine2014', 'levine2012'],
@@ -257,8 +266,8 @@ export default [
         answer: { type: 'tap', correct: [key] },
         reveal: { caption: what },
         look: ['Does he scan across from one to the other, brick by brick?'],
-        easier: 'Use three bricks and change the top one.',
-        harder: 'Move a brick instead of swapping its colour.',
+        easier: lv(level, 'Leave both models out side by side so he can look from one to the other.', 'Use three bricks and change the top one.', 'Use three bricks and change the top one.'),
+        harder: lv(level, 'Move a brick instead of swapping its colour.', 'Move a brick instead of swapping its colour.', 'Make two changes at once.'),
         words: ['the same', 'different', 'changed', 'moved'],
       };
     },
@@ -268,6 +277,8 @@ export default [
     id: 'enclosure',
     title: 'Make a field',
     strand: 'building',
+    skill: 'Building challenges',
+    needs: ['Wooden blocks or Duplo bricks for the fence'],
     toys: ['animals'],
     minutes: 6,
     research: ['casey2008', 'ferrara2011'],
@@ -275,6 +286,7 @@ export default [
     make(r, level) {
       const n = r.int(...lv(level, [2, 3], [3, 5], [4, 6]));
       const kinds = times(n, () => r.pick(FARM));
+      const beasts = (ks) => row(ks.map((k) => animal(k)), { gap: 6 });
       const job = lv(
         level,
         'The animals keep wandering off. Can you build a fence all the way round so none can get out?',
@@ -283,12 +295,13 @@ export default [
       );
       return {
         setup: [`Stand ${n} animals close together.`, 'Put out wooden blocks or Duplo bricks for the fence.'],
-        scenes: [{ caption: 'Seen from above', sprite: fence(row(kinds.slice(0, 3).map((k) => animal(k)), { gap: 6 })) }],
+        scenes: [{ caption: 'Seen from above', sprite: fence(n > 3 ? column([beasts(kinds.slice(0, Math.ceil(n / 2))), beasts(kinds.slice(Math.ceil(n / 2)))], { gap: 6 }) : beasts(kinds)) }],
         ask: job,
         answer: { type: 'open' },
+        more: [numQ(r, 'How many animals are inside your fence?', n, undefined, { min: 1 })],
         look: ['Does he close the loop, or leave it open at one end?', 'When an animal does not fit, does he move the fence or squash the animals?', 'Count the fence blocks together at the end.'],
         easier: 'Build three sides and let him finish the fourth.',
-        harder: 'Add a gate, or split the field in two.',
+        harder: lv(level, 'Add a gate, or split the field in two.', 'Add a gate, or split the field in two.', 'Ask for both: a gate, and a fence down the middle.'),
         words: ['inside', 'outside', 'all the way round', 'gap', 'corner', 'enough room'],
       };
     },
@@ -298,6 +311,8 @@ export default [
     id: 'track-loop',
     title: 'Round and back again',
     strand: 'building',
+    skill: 'Fitting pieces together',
+    needs: [],
     toys: ['brio'],
     minutes: 8,
     research: ['levine2012', 'devmatters'],
@@ -314,8 +329,8 @@ export default [
         ask: shapes.job,
         answer: { type: 'open' },
         look: ['When the ends do not meet, does he swap a piece, or push harder?', 'How many curves did it take to get all the way round? Count them together.', level > 1 ? 'Does he work out that both straight sides need the same number of pieces?' : 'Does he notice a curve can be flipped to bend the other way?'],
-        easier: 'Lay most of the circle yourself and leave a two-piece gap for him.',
-        harder: 'Add a straight section on each side and see what happens.',
+        easier: 'Lay most of the loop yourself and leave a two-piece gap for him.',
+        harder: lv(level, 'Add a straight section on each side and see what happens.', 'Add a bridge or a tunnel somewhere on the loop.', 'Ask for both: a bridge or tunnel, and a station.'),
         words: ['curve', 'straight', 'round', 'join', 'turn it over'],
       };
     },
@@ -325,6 +340,8 @@ export default [
     id: 'combine-shapes',
     title: 'Two make one',
     strand: 'building',
+    skill: 'Fitting pieces together',
+    needs: [],
     toys: ['wooden'],
     minutes: 4,
     research: ['devmatters', 'fisher2013'],
@@ -332,10 +349,10 @@ export default [
     make(r, level) {
       const c = r.sample(MORE_COLOURS, 3);
       const jobs = [
-        { parts: ['cube', 'cube'], target: block('brick', c[2]), made: build([{ shape: 'cube', colour: c[0], x: 0, y: 0 }, { shape: 'cube', colour: c[1], x: 1, y: 0 }]), say: 'two cubes', goal: 'a long block' },
-        { parts: ['cube', 'cube'], target: block('pillar', c[2]), made: build([{ shape: 'cube', colour: c[0], x: 0, y: 0 }, { shape: 'cube', colour: c[1], x: 0, y: 1 }]), say: 'two cubes', goal: 'a tall block' },
+        { parts: ['cube', 'cube'], target: block('brick', c[2]), made: build([{ shape: 'cube', colour: c[0], x: 0, y: 0 }, { shape: 'cube', colour: c[1], x: 1, y: 0 }]), say: 'two cubes', match: 'one long block', goal: 'a long block' },
+        { parts: ['cube', 'cube'], target: block('pillar', c[2]), made: build([{ shape: 'cube', colour: c[0], x: 0, y: 0 }, { shape: 'cube', colour: c[1], x: 0, y: 1 }]), say: 'two cubes', match: 'one tall block', goal: 'a tall block' },
         { parts: ['brick', 'brick'], target: build([{ shape: 'brick', colour: c[2], x: 0, y: 0 }, { shape: 'brick', colour: c[2], x: 0, y: 1 }]), made: build([{ shape: 'pillar', colour: c[0], x: 0, y: 0 }, { shape: 'pillar', colour: c[1], x: 1, y: 0 }]), say: 'two long blocks', goal: 'a big square', twist: 'There are two ways: lying down or standing up.' },
-        { parts: ['cube', 'cube', 'cube'], target: block('plank', c[2]), made: build([{ shape: 'cube', colour: c[0], x: 0, y: 0 }, { shape: 'cube', colour: c[1], x: 1, y: 0 }, { shape: 'cube', colour: c[0], x: 2, y: 0 }]), say: 'three cubes', goal: 'a row as long as the plank' },
+        { parts: ['cube', 'cube', 'cube'], target: block('plank', c[2]), made: build([{ shape: 'cube', colour: c[0], x: 0, y: 0 }, { shape: 'cube', colour: c[1], x: 1, y: 0 }, { shape: 'cube', colour: c[0], x: 2, y: 0 }]), say: 'three cubes', match: 'one flat plank', goal: 'a row as long as the plank' },
       ];
       const j = jobs[level === 1 ? r.int(0, 1) : level === 2 ? r.int(0, 2) : r.int(2, 3)];
       const parts = j.parts.map((p, i) => block(p, c[i % 2]));
@@ -345,14 +362,15 @@ export default [
         lhs.push(p);
       });
       return {
-        setup: [`Find ${j.say} and the block in the picture to match against.`],
+        setup: [j.match ? `Find ${j.say}, and ${j.match} to match against.` : `Find ${j.say}.`],
         scenes: [{ sprite: row([...lhs, sign('='), qbox(40, 40)], { gap: 9, align: 'middle' }) }],
         ask: `Can you put ${j.say} together to make ${j.goal}?`,
         answer: { type: 'do' },
-        reveal: { caption: `Hold them side by side to check they match.${j.twist ? ' ' + j.twist : ''}`, sprite: row([j.made, sign('='), j.target], { gap: 12, align: 'middle' }) },
+        reveal: { caption: j.twist || 'Hold them side by side to check they match.', sprite: row([j.made, sign('='), j.target], { gap: 12, align: 'middle' }) },
+        more: [numQ(r, 'How many blocks did you put together?', j.parts.length, undefined, { min: 1 })],
         look: ['Does he turn the blocks to try different ways?', 'Does he check by holding his shape against the real one?'],
         easier: 'Show him one way, pull it apart, and let him remake it.',
-        harder: 'Ask "what else can two triangles make?" and see what he finds.',
+        harder: 'Ask "what else can you make with these?" and see what he finds.',
         words: ['fits', 'the same shape', 'turn', 'long', 'square', 'side'],
       };
     },
