@@ -149,7 +149,7 @@ or the phone reports it was installed.
 The owner found the old design confusing (steps 1 to 3, a separate "stars to finish" number, and no way to tell how many
 questions were coming). Do not bring back per-strand steps or a stars target.
 
-Progress is kept per child, along with their animal, wording (he or she) and month of birth. For each activity it remembers the last difficulty and rating; `suggest()` in `store.js` opens it
+Progress is kept per child, along with their animal, wording (he or she) and month of birth. The Edit button beside a child on the Who is playing screen changes any of those (and the name) without touching progress; Remove is inside that form. For each activity it remembers the last difficulty and rating; `suggest()` in `store.js` opens it
 one harder after "too easy", one easier after "too tricky", otherwise the same. The picker (`weight()`) prefers activities
 never tried, then "just right" ones, and avoids repeats on the same day.
 Saved in `localStorage` under `toybox-maths-v2`. Older records have a numeric `level` where newer ones have `mode`; both are read.

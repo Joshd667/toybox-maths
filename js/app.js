@@ -598,11 +598,29 @@ let pickedPronoun = 'he';
 const PRONOUNS = [['he', 'He'], ['she', 'She']];
 const pronounSeg = (act, current) => `<div class="seg" role="group" aria-label="Wording">${PRONOUNS.map(([v, label]) => `<button type="button" data-act="${act}" data-v="${v}" aria-pressed="${v === current}">${label}</button>`).join('')}</div>`;
 let confirmRemove = null;
+let editing = null; // id of the child whose details are being changed
+// The form for changing one child's details. Remove lives in here too, so it is not tapped by mistake.
+function editForm(k) {
+  return `<li class="kid editing"><form class="add" data-form="edit-child" data-id="${k.id}">
+    <h2>Change ${esc(k.name)}</h2>
+    <label class="field"><span>Name</span><input name="name" maxlength="14" autocomplete="off" autocapitalize="words" value="${esc(k.name)}" /></label>
+    <p class="field-label">Their animal</p>
+    <div class="mascots">${MASCOTS.map((m) => `<button type="button" class="mascot-pick" data-act="mascot" data-v="${m}" aria-pressed="${m === pickedMascot}" aria-label="${m}">${pic(D.animal(m))}</button>`).join('')}</div>
+    <p class="field-label">The questions should say</p>
+    ${pronounSeg('new-pronoun', pickedPronoun)}
+    <p class="field-label">Born (you can leave this out)</p>
+    ${bornFields('', k.born)}
+    <p class="small">Used only to sort activities by age. It stays on this phone.</p>
+    <button class="btn primary big" type="submit">Save</button>
+    <div class="row"><button type="button" class="btn" data-act="edit-cancel">Cancel</button><button type="button" class="btn quiet" data-act="remove-ask" data-id="${k.id}">Remove ${esc(k.name)}</button></div>
+  </form></li>`;
+}
 function who() {
   const kids = store.children();
   const cur = store.child();
   const firstRun = !kids.length;
   const used = kids.map((k) => k.animal);
+  if (!kids.some((k) => k.id === editing)) editing = null;
   if (!pickedMascot || !MASCOTS.includes(pickedMascot)) pickedMascot = MASCOTS.find((m) => !used.includes(m)) || MASCOTS[0];
   return `${firstRun ? `<header class="top">${BRAND}</header>` : `<header class="top"><a class="round" href="#/" aria-label="Back">${icon.back}</a><h1>Who is playing?</h1></header>`}
   <section class="page">
@@ -611,10 +629,12 @@ function who() {
       .map((k) =>
         confirmRemove === k.id
           ? `<li class="kid confirm"><p>Remove ${esc(k.name)} and all their progress?</p><div class="row"><button class="btn" data-act="remove-no">Keep</button><button class="btn r-hard" data-act="remove-yes" data-id="${k.id}">Remove</button></div></li>`
-          : `<li class="kid${k.id === cur.id ? ' current' : ''}"><button class="kid-main" data-act="switch" data-id="${k.id}"><span class="avatar big">${mascot(k)}</span><span class="kid-name">${esc(k.name)}</span><span class="kid-stars">${icon.star(true)} ${k.stars}</span></button><button class="btn quiet slim" data-act="remove-ask" data-id="${k.id}">Remove</button></li>`
+          : editing === k.id
+            ? editForm(k)
+            : `<li class="kid${k.id === cur.id ? ' current' : ''}"><button class="kid-main" data-act="switch" data-id="${k.id}"><span class="avatar big">${mascot(k)}</span><span class="kid-name">${esc(k.name)}</span><span class="kid-stars">${icon.star(true)} ${k.stars}</span></button><button class="btn quiet slim" data-act="edit" data-id="${k.id}">Edit</button></li>`
       )
       .join('')}</ul>` : ''}
-    <form class="add" data-form="add-child">
+    ${editing ? '' : `<form class="add" data-form="add-child">
       <h2>${firstRun ? 'First child' : 'Add a child'}</h2>
       <label class="field"><span>Name</span><input name="name" maxlength="14" autocomplete="off" autocapitalize="words" placeholder="Name or nickname" /></label>
       <p class="field-label">Their animal</p>
@@ -625,7 +645,7 @@ function who() {
       ${bornFields('', '')}
       <p class="small">Used only to sort activities by age. It stays on this phone.</p>
       <button class="btn primary big" type="submit">${firstRun ? 'Start' : 'Add'}</button>
-    </form>
+    </form>`}
   </section>`;
 }
 
@@ -795,6 +815,14 @@ function onTap(el, e) {
     store.switchTo(el.dataset.id);
     return go('#/');
   }
+  if (act === 'edit' || act === 'edit-cancel') {
+    const k = act === 'edit' && store.children().find((c) => c.id === el.dataset.id);
+    editing = k ? k.id : null;
+    // The form opens on this child's own animal and wording; closing it clears them for the add-a-child form.
+    pickedMascot = k ? k.animal : null;
+    pickedPronoun = k ? k.pronoun || 'he' : 'he';
+    return draw(!!k);
+  }
   if (act === 'remove-ask' || act === 'remove-no') {
     confirmRemove = act === 'remove-ask' ? el.dataset.id : null;
     return draw(true);
@@ -802,6 +830,9 @@ function onTap(el, e) {
   if (act === 'remove-yes') {
     store.removeChild(el.dataset.id);
     confirmRemove = null;
+    editing = null;
+    pickedMascot = null;
+    pickedPronoun = 'he';
     return draw(false);
   }
   if (act === 'new-pronoun') {
@@ -1012,6 +1043,15 @@ document.addEventListener('change', (e) => {
   }
 });
 document.addEventListener('submit', (e) => {
+  if (e.target.dataset.form === 'edit-child') {
+    e.preventDefault();
+    const k = store.children().find((c) => c.id === e.target.dataset.id);
+    store.updateChild(k.id, { name: new FormData(e.target).get('name').trim() || k.name, animal: pickedMascot, pronoun: pickedPronoun, born: bornFrom(e.target) });
+    editing = null;
+    pickedMascot = null;
+    pickedPronoun = 'he';
+    return draw(false);
+  }
   if (e.target.dataset.form !== 'add-child') return;
   e.preventDefault();
   const typed = new FormData(e.target).get('name').trim();

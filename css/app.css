@@ -535,6 +535,9 @@ button.tile { border: 3px solid transparent; position: relative; font: inherit; 
 .kid-main { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 4px; border: 0; background: none; text-align: left; }
 .kid-name { flex: 1; min-width: 0; font-family: var(--display); font-weight: 600; font-size: 22px; overflow: hidden; text-overflow: ellipsis; }
 .kid-stars { display: flex; align-items: center; gap: 4px; color: var(--muted); font-weight: 700; }
+.kid.editing { display: block; padding: 0; background: none; }
+.kid.editing .add { margin-top: 0; border: 3px solid var(--accent); }
+.kid.editing .row .btn { margin-top: 0; }
 .add { background: var(--surface); border-radius: 20px; padding: 4px 16px 16px; margin-top: 16px; }
 .add h2 { margin-top: 14px; }
 .field { display: grid; gap: 4px; margin-top: 12px; }

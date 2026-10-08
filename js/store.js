@@ -79,6 +79,13 @@ export function removeChild(id) {
   if (state.current === id) state.current = state.children[0]?.id || null;
   save();
 }
+// Change a child's name, animal, wording or month of birth. Their stars and progress are kept.
+export function updateChild(id, { name, animal, pronoun, born }) {
+  const c = state.children.find((k) => k.id === id);
+  if (!c) return;
+  Object.assign(c, { name, animal, pronoun: pronoun === 'she' ? 'she' : 'he', born: /^\d{4}-\d{2}$/.test(born || '') ? born : null });
+  save();
+}
 export function setPronoun(pronoun) {
   child().pronoun = pronoun;
   save();
