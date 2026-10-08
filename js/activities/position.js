@@ -1,7 +1,7 @@
 // Position words: on, under, behind, between, first, last… said, heard and acted out.
 import {
   A, lv, times, has, list, an, rabbitScene,
-  row, column, model, build, block, car, animal, bunny, engine, wagon, train, onTrack, frame, text, arrow, hit, tag, flag, scale, layer, flow,
+  row, column, model, build, block, car, animal, bunny, trackBridge, engine, wagon, train, onTrack, frame, text, arrow, hit, tag, flag, scale, layer, flow,
   BRICK_COLOURS, MORE_COLOURS, FARM,
 } from './kit.js';
 
@@ -219,7 +219,7 @@ export default [
     title: 'Listen, then go',
     strand: 'position',
     skill: 'Following a route',
-    needs: ['Blocks for a tunnel, a tree and a tower', 'A toy sheep'],
+    needs: ['Blocks for a tunnel, a tree and a tower', 'A toy sheep', 'The train bridge, if the trains are out'],
     toys: ['cars', 'brio', 'animals'],
     minutes: 5,
     age: 3,
@@ -230,6 +230,8 @@ export default [
       const mover = has(ctx, 'cars') ? 'car' : has(ctx, 'brio') ? 'train' : 'cow';
       const marks = r.sample(
         [
+          // the family's train bridge, when the trains are out: animals go under it, wheels go over or under
+          ...(has(ctx, 'brio') ? [{ s: trackBridge(), put: 'the train bridge', go: mover === 'cow' || r.bool() ? 'under the bridge' : 'over the bridge' }] : []),
           { s: block('arch', 'blue'), put: 'an arch or tunnel', go: 'through the tunnel' },
           { s: build([{ shape: 'pillar', colour: 'brown', x: 0.5, y: 0 }, { shape: 'roof', colour: 'green', x: 0, y: 2 }]), put: 'a tree (a triangle on a tall block)', go: 'round the tree' },
           { s: animal('sheep'), put: 'a sheep', go: 'past the sheep' },
@@ -252,7 +254,7 @@ export default [
         look: ['Does he hold the whole route in his head, or need a reminder half way?', 'Does he do "through", "round" and "over" differently?'],
         easier: lv(level, 'One place at a time: say it, he goes, then say the next.', 'Two places, and say them again as he goes.'),
         harder: 'He gives you a route, and you drive it.',
-        words: ['first', 'then', 'last', 'through', 'round', 'over', 'past'],
+        words: ['first', 'then', 'last', 'through', 'round', 'over', 'under', 'past'],
       };
     },
   }),

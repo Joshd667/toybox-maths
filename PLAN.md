@@ -35,7 +35,9 @@ Montessori: recorded in `NOT_CLAIMED` and in `CLAUDE.md`. Ideas borrowed, no cla
    - `age` would need a value below 2.5 (validator, `ageWord`, the "For later" rule).
    - Small parts: linking cubes and Numicon pegs must be left out for this band.
    - Be plain that the research here describes what is typical. Nothing shows that practising early helps later maths.
-2. **Ask the owner:** is there a bridge piece in the track? Are there nesting cups or a shape sorter in the house (for the youngest band)?
+2. **Ask the owner:** are there nesting cups or a shape sorter in the house (for the youngest band)? And which kind of train bridge is it
+   (one humped piece, or ramps on supports)? He has a bridge: `journey` uses it as a landmark. Knowing the kind would let it go into
+   `copy-track` layouts, with one track crossing over another.
 3. **Sources to re-check.** Four pages would not load on the day (rate limits), so their entries point at the page that was read
    and leave out page numbers: `deloache1991`, `courtier2021`, `huttenlocher1999`, `feigenson2002`. Add DOIs when they can be confirmed.
 4. **Per-age wording.** The age range picks the starting difficulty. If the owner wants more than that (different set-up text

@@ -73,7 +73,7 @@ A new strand file must also be imported in `js/activities/index.js`.
 
 A sprite is `{ w, h, svg }`. Toys: `car`, `animal`, `duplo`, `tower`, `model`, `block`, `build`, `cube`, `rod`,
 `numicon`, `numiconStack` (shapes fitted together), `card`, `numeral`, `dots`, `engine`, `wagon`, `train`,
-`trackPlan` (track from above, piece by piece), `bunny`, `peek` (the rabbit game's blocks), `flat`.
+`trackPlan` (track from above, piece by piece), `trackBridge`, `bunny`, `peek` (the rabbit game's blocks), `flat`.
 (`ramp` and `trackPath` are still in `draw.js` but nothing uses them: see `PLAN.md` for why there is no ramp activity.)
 `kit.js` adds `trackList`, `mirror`, `sized` (toys drawn in different sizes) and `rabbitScene`.
 Layout: `row`, `column`, `grid`, `flow` (wraps), `scatter`, `layer`, `scale`, `frame`, `tag`, `ring`, `hit`.
@@ -129,7 +129,9 @@ How the app works is covered by the welcome screens and each activity's "i" butt
 
 Ask before assuming anything beyond this. `PLAN.md` lists what is still unknown.
 
-- **Train track.** Long straights, short straights and curves. **No points, no tunnel.** Do not write an activity that needs them.
+- **Train track.** Long straights, short straights, curves and a bridge. **No points, no tunnel.** Do not write an activity that needs them.
+  The bridge is used as a landmark in `journey` (`trackBridge()` draws it from the side). Which kind of bridge it is has not been asked,
+  so it is not yet part of any `trackPlan` layout.
   In `trackPlan` a curve is an eighth of a circle and about as long as a long straight, so "count the pieces" is a fair way to compare lengths.
 - **Animals and cars.** A random mix in random sizes, not matched sets. So a size activity cannot say "the small cow":
   it says "pick any three that are clearly different sizes", the picture is captioned as an example, and the answer type is `do` or `open`.

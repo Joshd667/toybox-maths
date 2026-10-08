@@ -444,6 +444,18 @@ export function trackPlan(pieces, o = {}) {
   return sp(R(w), R(hgt), `<g transform="translate(${R(-minX)} ${R(-minY)})">${svg}</g>`);
 }
 
+// A wooden train bridge seen from the side: a humped length of track on two legs, tall enough for a train to pass under.
+export function trackBridge() {
+  const c = PAL.wood;
+  const d = shade(c, -0.3);
+  return sp(
+    96,
+    44,
+    `<rect x="26" y="12" width="8" height="32" rx="1.5" fill="${shade(c, -0.12)}" stroke="${d}"/><rect x="62" y="12" width="8" height="32" rx="1.5" fill="${shade(c, -0.12)}" stroke="${d}"/>` +
+      `<path d="M1 43Q20 6 48 6T95 43H86Q70 14 48 14T10 43Z" fill="${c}" stroke="${d}" stroke-width="1.2" stroke-linejoin="round"/>`
+  );
+}
+
 // ---------------------------------------------------------------- rabbit game blocks
 // Our own plain drawings of the three wooden pieces in the owner's rabbit hide-and-seek game, seen from the front:
 // a hollow blue box (open at the front, a star-shaped hole in the top), a yellow block with a round hole
