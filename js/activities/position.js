@@ -56,6 +56,7 @@ export default [
     needs: ['Two toy animals or figures', 'A few blocks or bricks', 'A small box or tub'],
     toys: ['bunny', 'animals', 'wooden', 'duplo'],
     minutes: 3,
+    age: 2.5,
     research: ['devmatters', 'pruden2011', 'purpura2017'],
     why: 'Understanding position "through words alone, with no pointing" is on the 3-and-4-year-old list. Children who hear more of these words do better on later spatial tasks.',
     make(r, level, ctx) {
@@ -81,6 +82,7 @@ export default [
     needs: ['Two toy animals or figures', 'A few blocks or bricks', 'A small box or tub'],
     toys: ['bunny', 'animals', 'wooden', 'duplo'],
     minutes: 4,
+    age: 3,
     research: ['pruden2011', 'ferrara2011'],
     why: 'It was children saying spatial words themselves, not just hearing them, that predicted later spatial skill.',
     make(r, level, ctx) {
@@ -107,6 +109,7 @@ export default [
     needs: [],
     toys: ['duplo'],
     minutes: 4,
+    age: 3,
     research: ['devmatters', 'ferrara2011', 'verdine2014'],
     why: 'Building from spoken steps joins two things the research links to early maths: position words and putting a model together.',
     make(r, level) {
@@ -156,6 +159,7 @@ export default [
     needs: ['A cup or flag for the front of the line'],
     toys: ['animals'],
     minutes: 3,
+    age: 3,
     research: ['devmatters', 'purpura2017'],
     why: '"First", "last", "behind" and "in front of" are both position words and maths words. They describe order, which is what a number line is.',
     make(r, level) {
@@ -209,6 +213,7 @@ export default [
     needs: ['Blocks for a tunnel, a tree and a tower', 'A toy sheep'],
     toys: ['cars', 'brio', 'animals'],
     minutes: 5,
+    age: 3,
     research: ['devmatters', 'pruden2011'],
     why: 'Describing a route and using "first… then…" for a sequence are both on the 3-and-4-year-old list.',
     make(r, level, ctx) {

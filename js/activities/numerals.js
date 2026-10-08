@@ -29,6 +29,7 @@ export default [
     needs: [],
     toys: [],
     minutes: 2,
+    age: 3,
     research: ['devmatters', 'ramani2008'],
     why: 'Naming written numbers is a separate skill from counting, and one of the things number games were shown to improve.',
     make(r, level) {
@@ -63,6 +64,7 @@ export default [
     needs: [],
     toys: ANY,
     minutes: 4,
+    age: 3,
     research: ['devmatters', 'wynn1990'],
     why: 'Matching a written number to the right amount of toys is on the 3-and-4-year-old maths list (up to 5).',
     make(r, level, ctx) {
@@ -91,6 +93,7 @@ export default [
     needs: [],
     toys: ['numicon'],
     minutes: 3,
+    age: 3,
     research: ['eef2020', 'devmatters'],
     why: 'Each Numicon shape is a fixed picture of its number, which gives the written numeral something to stand for.',
     make(r, level) {
@@ -136,6 +139,7 @@ export default [
     needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
+    age: 3,
     research: ['devmatters', 'eef2020'],
     why: 'Picking the tower that matches a numeral links the symbol to an amount he can see and hold.',
     make(r, level, ctx) {
@@ -172,6 +176,7 @@ export default [
     needs: [],
     toys: [],
     minutes: 3,
+    age: 4,
     research: ['ramani2008', 'devmatters'],
     why: 'Seeing numbers in a line, in order, builds a mental number line.',
     make(r, level) {
@@ -204,6 +209,7 @@ export default [
     needs: ['Number cards, or paper and a pen'],
     toys: ['cars', 'animals', 'brio'],
     minutes: 6,
+    age: 4,
     research: ['ramani2008'],
     why: 'This is the board game from the research: a straight track numbered 1 to 10, a spinner with 1 and 2, and saying the numbers you land on. About an hour of play in total improved four different number skills in 4-year-olds.',
     make(r, level, ctx) {
@@ -234,6 +240,7 @@ export default [
     needs: ['Number cards, or paper and a pen'],
     toys: [],
     minutes: 4,
+    age: 4,
     research: ['devmatters', 'ramani2008'],
     why: 'Ordering numerals builds the sense that numbers sit in a fixed line, each one bigger than the last.',
     make(r, level) {

@@ -18,6 +18,7 @@ export default [
     needs: ['A box'],
     toys: HIDE,
     minutes: 4,
+    age: 3,
     research: ['huttenlocher1994', 'hughes1986', 'devmatters'],
     why: 'Young children can work out small sums with hidden objects well before they can answer "what is 2 and 1?". Keep the numbers very small.',
     make(r, level, ctx) {
@@ -54,6 +55,7 @@ export default [
     needs: ['A box or tea towel'],
     toys: HIDE,
     minutes: 4,
+    age: 3,
     research: ['huttenlocher1994', 'hughes1986'],
     why: 'Taking away with hidden objects uses the same picture-in-the-head as adding, and works with numbers up to about 3 or 4 first.',
     make(r, level, ctx) {
@@ -91,6 +93,7 @@ export default [
     toys: ['cubes', 'duplo', 'cars', 'animals'],
     levels: [2, 3],
     minutes: 3,
+    age: 4,
     research: ['ncetm', 'devmatters'],
     why: 'Seeing one part and working out the hidden part is how numbers get broken into pairs. It is a Reception-age idea, so this one is a stretch.',
     make(r, level, ctx) {
@@ -125,6 +128,7 @@ export default [
     needs: [],
     toys: ['numicon'],
     minutes: 4,
+    age: 4,
     research: ['eef2020', 'ncetm'],
     why: 'Laying one shape on another shows that a number is made of smaller numbers, and he can check by fitting them together.',
     make(r, level) {
@@ -154,6 +158,7 @@ export default [
     needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
+    age: 3,
     research: ['ncetm', 'eef2020'],
     why: 'A tower in two colours shows the parts and the whole at once: some red, some blue, and one total.',
     make(r, level, ctx) {

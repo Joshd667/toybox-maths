@@ -15,6 +15,7 @@ export default [
     needs: ['Spare toys to hold up as the new one', 'Cars and animals together for Medium', 'A car, a brick and a cube in each of two colours for Hard'],
     toys: ['cars', 'animals', 'duplo', 'cubes', 'wooden'],
     minutes: 4,
+    age: 2.5,
     research: ['ncetm', 'eef2020'],
     why: 'Sorting means deciding what is the same about things and ignoring what is different, which is the root of every comparison in maths.',
     make(r, level, ctx) {
@@ -77,6 +78,7 @@ export default [
     needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 4,
+    age: 3,
     research: ['devmatters', 'ncetm'],
     why: 'Putting three or more things in order of size means comparing each one with two neighbours at once.',
     make(r, level, ctx) {
@@ -112,6 +114,7 @@ export default [
     needs: [],
     toys: ['brio'],
     minutes: 3,
+    age: 2.5,
     research: ['devmatters', 'ncetm'],
     why: 'Comparing lengths fairly means lining up one end. Children often judge by which one sticks out further.',
     make(r, level) {
@@ -152,6 +155,7 @@ export default [
     needs: [],
     toys: [],
     minutes: 3,
+    age: 3,
     research: ['fisher2013', 'devmatters'],
     why: 'In a guided-play study, 4- and 5-year-olds learned what really makes a shape (three straight sides, three corners) better than through free play or being told.',
     make(r, level) {
@@ -183,6 +187,7 @@ export default [
     needs: ['A bag or pillowcase'],
     toys: ['wooden'],
     minutes: 4,
+    age: 3,
     research: ['devmatters', 'zosh2015'],
     why: 'Feeling for a shape without looking makes him think about flat faces, corners and curves, and gives you both plenty of shape words to use.',
     make(r, level) {

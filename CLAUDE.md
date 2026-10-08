@@ -34,6 +34,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 2. Fill in the fixed parts:
    - `id`: unique, lower-case-with-dashes. Never change an id later (progress is saved against it).
    - `title`, `strand`, `minutes` (1 to 10)
+   - `age`: 2.5, 3 or 4. The youngest age the Easy version is aimed at (see "Ages" below).
    - `skill`: the sub-skill inside the strand, shown to the parent ("Counting out"). Reuse one the strand already has; a strand has 2 to 4.
    - `needs`: extra things to fetch besides the toys ("A plate or box"), listed on the Get ready screen. `[]` if none.
    - `toys`: ids from `TOYS` in `index.js`; any one of them is enough to play. `[]` means no toys needed.
@@ -91,6 +92,21 @@ A new animal needs those parts too, or it will dance as a stiff cut-out.
   Numicon, or a research-backed session length). Do not add them back without a real source.
 - No fads: no "brain training", learning styles, or claims of lasting advantage from starting early.
 
+## Ages
+
+Every activity has an `age` of 2.5, 3 or 4, shown in the lists as "from 3" and on the Get ready screen.
+A child's profile can hold a month of birth (`born: 'YYYY-MM'`, optional, typed in on the phone and saved only there).
+`ageOf()` in `store.js` rounds the child's age to the nearest half year; `later(a)` says an activity is aimed at someone older.
+
+- Nothing is ever hidden by age. In a list, activities for older children move to a "For later" group at the end.
+  "Just pick one" and "Pick one of these" leave them out unless there is nothing else. With no month of birth, nothing moves.
+  The owner asked for this: keep everything visible and do not add a new screen or tab for age.
+- Choosing the age: 2.5 only where Development Matters lists the idea under "Birth to three" (comparing amounts and sizes,
+  building, counting-like behaviour) or the Easy version is just that. 3 for the "3 and 4-year-olds" statements.
+  4 for "Children in reception" ideas (counting sounds, number order, parts of a number, growing patterns) and for
+  anything whose only evidence is from children of 4 and over.
+- The ages are a rough guide, and the Guide screen says so. Do not describe them as research findings.
+
 ## Writing rules
 
 - The reader is a parent holding a toddler's attention with one hand. Short sentences. UK spelling.
@@ -133,7 +149,7 @@ or the phone reports it was installed.
 The owner found the old design confusing (steps 1 to 3, a separate "stars to finish" number, and no way to tell how many
 questions were coming). Do not bring back per-strand steps or a stars target.
 
-Progress is kept per child. For each activity it remembers the last difficulty and rating; `suggest()` in `store.js` opens it
+Progress is kept per child, along with their animal, wording (he or she) and month of birth. For each activity it remembers the last difficulty and rating; `suggest()` in `store.js` opens it
 one harder after "too easy", one easier after "too tricky", otherwise the same. The picker (`weight()`) prefers activities
 never tried, then "just right" ones, and avoids repeats on the same day.
 Saved in `localStorage` under `toybox-maths-v2`. Older records have a numeric `level` where newer ones have `mode`; both are read.

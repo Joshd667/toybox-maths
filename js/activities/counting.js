@@ -16,6 +16,7 @@ export default [
     needs: [],
     toys: [...ANY, 'brio'],
     minutes: 3,
+    age: 2.5,
     research: ['gelman1978', 'mix2012', 'devmatters'],
     why: 'Touching each toy once with one number each, then saying the total again, is what links counting to "how many".',
     make(r, level, ctx) {
@@ -57,6 +58,7 @@ export default [
     needs: ['A plate or box'],
     toys: ANY,
     minutes: 4,
+    age: 3,
     research: ['wynn1990', 'sarnecka2008'],
     why: 'Fetching exactly the right number is harder than counting a line, and shows whether a number word really means that amount to him.',
     make(r, level, ctx) {
@@ -85,6 +87,7 @@ export default [
     needs: ['Duplo bricks or cubes for dinners'],
     toys: ['animals'],
     minutes: 4,
+    age: 2.5,
     research: ['gelman1978', 'devmatters'],
     why: 'Giving one to each is the same one-to-one matching that counting depends on.',
     make(r, level, ctx) {
@@ -120,6 +123,7 @@ export default [
     needs: [],
     toys: [],
     minutes: 2,
+    age: 3,
     research: ['clements1999', 'devmatters'],
     why: 'Seeing "three" at a glance without counting is called subitising. It is one of the first things on the 3-and-4-year-old maths list.',
     make(r, level) {
@@ -157,6 +161,7 @@ export default [
     needs: ['Bricks or cubes to load'],
     toys: ['brio'],
     minutes: 3,
+    age: 2.5,
     research: ['gelman1978', 'gunderson2011'],
     why: 'Counting only the wagons, and not the engine, means deciding what counts before you start.',
     make(r, level) {
@@ -192,6 +197,7 @@ export default [
     needs: [],
     toys: ['duplo', 'cubes'],
     minutes: 3,
+    age: 3,
     research: ['sarnecka2008', 'devmatters'],
     why: 'Knowing that the next number means exactly one more is the idea that turns the counting chant into real numbers.',
     make(r, level) {
@@ -225,6 +231,7 @@ export default [
     needs: ['Numicon pegs or small cubes'],
     toys: ['numicon'],
     minutes: 3,
+    age: 3,
     research: ['eef2020', 'gelman1978'],
     why: 'One peg in each hole is one-to-one matching you can see, and each shape always looks like its number.',
     make(r, level) {
@@ -252,6 +259,7 @@ export default [
     needs: ['A tin or saucepan', 'A handful of bricks'],
     toys: [],
     minutes: 2,
+    age: 4,
     research: ['gelman1978', 'devmatters'],
     why: 'Anything can be counted, including sounds you cannot see or touch.',
     make(r, level) {
@@ -288,6 +296,7 @@ export default [
     needs: ['A teddy or toy animal'],
     toys: ANY,
     minutes: 4,
+    age: 3,
     research: ['gelmanmeck1983', 'gelman1978'],
     why: 'Children can often spot a counting mistake before they can count that many themselves. Catching it means they know the rules.',
     make(r, level, ctx) {

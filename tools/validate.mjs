@@ -42,6 +42,7 @@ for (const a of ACTIVITIES) {
   if (!Array.isArray(a.toys)) err(W, 'toys must be a list ([] means no toys needed)');
   else for (const t of a.toys) if (!toyIds.has(t)) err(W, `unknown toy "${t}"`);
   if (!(a.minutes >= 1 && a.minutes <= 10)) err(W, 'minutes should be between 1 and 10');
+  if (![2.5, 3, 4].includes(a.age)) err(W, '"age" must be 2.5, 3 or 4: the youngest age the Easy version is aimed at');
   if (badText(a.why)) err(W, 'missing "why"');
   if (badText(a.skill)) err(W, 'missing "skill" (the sub-skill inside its strand)');
   if (!Array.isArray(a.needs) || a.needs.some(badText)) err(W, '"needs" must be a list of extra things to fetch ([] if none)');

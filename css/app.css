@@ -180,6 +180,8 @@ button { cursor: pointer; touch-action: manipulation; }
 .li-title { font-family: var(--display); font-weight: 500; font-size: 19px; line-height: 1.2; }
 .li-meta { grid-column: 1; font-size: 14px; color: var(--muted); }
 .list .badge { grid-column: 2; grid-row: 1 / span 2; }
+.group-note { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.list.later a { background: none; border: 2px dashed var(--line); }
 
 /* ------------------------------------------------------------ playing */
 .play-top { flex-wrap: wrap; row-gap: 10px; }
@@ -199,6 +201,8 @@ button { cursor: pointer; touch-action: manipulation; }
 
 /* get ready: what you need, how hard, how many */
 .tagline { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 4px 0 16px; font-size: 16px; }
+.tagline .from { color: var(--muted); font-size: 14px; }
+.tagline .from::before { content: '· '; }
 .pill { padding: 3px 12px; border-radius: 999px; background: var(--c); color: #fff; font-weight: 700; font-size: 14px; }
 .card { background: var(--surface); border-radius: 20px; padding: 16px; margin-top: 12px; }
 .card h2 { margin: 0 0 12px; }
@@ -443,6 +447,7 @@ button { cursor: pointer; touch-action: manipulation; }
 .welcome { display: grid; gap: 4px; padding-bottom: calc(28px + env(safe-area-inset-bottom)); }
 .welcome .lede { margin: 6px 0 14px; }
 .welcome .small { font-size: 14px; color: var(--muted); text-align: center; margin: 10px 0 0; }
+.add .small { font-size: 14px; color: var(--muted); text-align: left; margin: 8px 0 0; }
 .welcome .small .ico { width: 16px; height: 16px; vertical-align: -3px; }
 .welcome .add { margin-top: 4px; }
 .welcome .kids { margin-bottom: 12px; }
@@ -536,6 +541,8 @@ button.tile { border: 3px solid transparent; position: relative; font: inherit; 
 .field span, .field-label { font-size: 14px; font-weight: 700; color: var(--muted); }
 .field-label { margin: 14px 0 6px; }
 .field input { min-height: 52px; padding: 8px 14px; border: 2px solid var(--line); border-radius: 14px; background: var(--bg); font-size: 19px; }
+.born { display: grid; grid-template-columns: 3fr 2fr; gap: 8px; }
+.born select { min-height: 52px; padding: 8px 12px; border: 2px solid var(--line); border-radius: 14px; background: var(--bg); color: var(--ink); font: inherit; font-size: 18px; }
 .mascots { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .mascot-pick { aspect-ratio: 1; display: grid; place-items: center; padding: 8px; border-radius: 16px; background: var(--mat); border: 3px solid transparent; }
 .mascot-pick svg { max-width: 100%; max-height: 100%; width: auto; height: auto; }

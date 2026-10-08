@@ -52,6 +52,31 @@ const subSkills = (id) => [...new Set(forSkill(id).map((a) => a.skill))];
 const MASCOTS = ['giraffe', 'elephant', 'lion', 'duck', 'pig', 'cow', 'sheep', 'horse'];
 const mascot = (c) => pic(D.animal(c?.animal || 'giraffe'));
 
+// Ages. An activity's `age` is the youngest age its Easy version is aimed at: 2.5, 3 or 4.
+const ageWord = (n) => (n % 1 ? `${Math.floor(n)}½` : String(n));
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+// Two menus for the month of birth. `born` is 'YYYY-MM' or empty; `act` is what a change does.
+function bornFields(act, born) {
+  const [y, m] = (born || '').split('-');
+  const year = new Date().getFullYear();
+  const years = Array.from({ length: 9 }, (_, i) => String(year - i));
+  if (y && !years.includes(y)) years.push(y);
+  const opt = (v, label, cur) => `<option value="${v}"${v === cur ? ' selected' : ''}>${label}</option>`;
+  return `<div class="born">
+    <select name="born-month" data-change="${act}" aria-label="Month of birth">${opt('', 'Month', m || '')}${MONTHS.map((n, i) => opt(String(i + 1).padStart(2, '0'), n, m)).join('')}</select>
+    <select name="born-year" data-change="${act}" aria-label="Year of birth">${opt('', 'Year', y || '')}${years.map((n) => opt(n, n, y)).join('')}</select>
+  </div>`;
+}
+const bornFrom = (box) => {
+  const m = box.querySelector('[name="born-month"]').value;
+  const y = box.querySelector('[name="born-year"]').value;
+  return m && y ? `${y}-${m}` : null;
+};
+const ageLine = (c) => {
+  const age = store.ageOf(c);
+  return age === null ? 'Not given. Every activity is offered.' : age < 1 ? 'Under 1.' : `About ${ageWord(age)}. Activities for older children are listed under "For later".`;
+};
+
 const RATING_WORD = { easy: 'Too easy', right: 'Just right', hard: 'Too tricky', skip: 'Not today' };
 const icon = {
   back: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
@@ -124,12 +149,16 @@ function list(kind, id) {
     const last = store.actState(a.id).last;
     return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
       <span class="li-title">${esc(a.title)}</span>
-      <span class="li-meta">${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
+      <span class="li-meta">${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')} · from ${ageWord(a.age)}</span>
       ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
     </a></li>`;
   };
   // Looking at one skill: group the activities under its sub-skills.
-  const groups = isToy ? [['', shown]] : subSkills(id).map((k) => [k, shown.filter((a) => a.skill === k)]).filter(([, acts]) => acts.length);
+  // Activities aimed at older children than this one stay on the page, in a group of their own at the end.
+  const now = shown.filter((a) => !store.later(a));
+  const older = shown.filter((a) => store.later(a)).sort((a, b) => a.age - b.age);
+  const groups = (isToy ? [['', now]] : subSkills(id).map((k) => [k, now.filter((a) => a.skill === k)])).filter(([, acts]) => acts.length);
+  if (older.length) groups.push(['For later', older, `Aimed at children older than about ${ageWord(store.ageOf())}. Still fine to try.`]);
   return `${topBar(title, '#/')}
   <section class="page">
     <button class="go small" data-act="pick-here">${icon.dice}<span>Pick one of these</span></button>
@@ -137,7 +166,7 @@ function list(kind, id) {
       <button class="chip" data-act="filter" data-v="" aria-pressed="${!listFilter}">All</button>
       ${chips.map((c) => `<button class="chip${c.colour ? ' tint' : ' with-pic'}" ${c.colour ? `style="--c:${c.colour}"` : ''} data-act="filter" data-v="${c.id}" aria-pressed="${listFilter === c.id}">${c.colour ? '' : `<span class="chip-pic">${pic(toyArt[c.id]())}</span>`}${esc(c.name)}</button>`).join('')}
     </div>
-    ${groups.map(([name, acts]) => `${name ? `<h2 class="group">${esc(name)}</h2>` : ''}<ul class="list">${acts.map(item).join('')}</ul>`).join('')}
+    ${groups.map(([name, acts, note]) => `${name ? `<h2 class="group">${esc(name)}</h2>` : ''}${note ? `<p class="group-note">${esc(note)}</p>` : ''}<ul class="list${note ? ' later' : ''}">${acts.map(item).join('')}</ul>`).join('')}
   </section>`;
 }
 const shownIds = () => [...document.querySelectorAll('.list a')].map((el) => el.dataset.id);
@@ -266,7 +295,7 @@ function readyScreen() {
   const choose = toys.length > 1;
   return `${playTop()}
   <section class="page stage ready">
-    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span></p>
+    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span><span class="from">From about ${ageWord(a.age)}</span></p>
     <div class="card eg">
       <h2>The game</h2>
       ${egPic ? `<figure class="fig">${render(egPic.sprite, { label: 'Example set-up' })}</figure>` : ''}
@@ -533,6 +562,9 @@ function welcome() {
         <div class="mascots">${MASCOTS.map((m) => `<button type="button" class="mascot-pick" data-act="mascot" data-v="${m}" aria-pressed="${m === pickedMascot}" aria-label="${m}">${pic(D.animal(m))}</button>`).join('')}</div>
         <p class="field-label">The questions should say</p>
         ${pronounSeg('new-pronoun', pickedPronoun)}
+        <p class="field-label">Born (you can leave this out)</p>
+        ${bornFields('', '')}
+        <p class="small">Used only to sort activities by age. It stays on this phone.</p>
         <button class="btn ${kids.length ? '' : 'primary '}big" type="submit">${kids.length ? 'Add' : 'Next'}</button>
       </form>
       <p class="small">You can add more children later, from the name at the top.</p>
@@ -589,6 +621,9 @@ function who() {
       <div class="mascots">${MASCOTS.map((m) => `<button type="button" class="mascot-pick" data-act="mascot" data-v="${m}" aria-pressed="${m === pickedMascot}" aria-label="${m}">${pic(D.animal(m))}</button>`).join('')}</div>
       <p class="field-label">The questions should say</p>
       ${pronounSeg('new-pronoun', pickedPronoun)}
+      <p class="field-label">Born (you can leave this out)</p>
+      ${bornFields('', '')}
+      <p class="small">Used only to sort activities by age. It stays on this phone.</p>
       <button class="btn primary big" type="submit">${firstRun ? 'Start' : 'Add'}</button>
     </form>
   </section>`;
@@ -607,6 +642,7 @@ function settingsScreen() {
     <div class="setting"><h2>Sound</h2>${onOff('sound', s.sound)}</div>
     <div class="setting"><h2>Animation</h2>${onOff('motion', s.motion)}<p>Stars flying and the animal dancing.</p></div>
     <div class="setting"><h2>Questions about ${esc(c.name)} say</h2>${pronounSeg('pronoun', c.pronoun || 'he')}<p>Each child has their own. Change child from the name at the top.</p></div>
+    <div class="setting"><h2>${esc(c.name)} was born</h2>${bornFields('born', c.born)}<p>${ageLine(c)} This stays on this phone.</p></div>
     <div class="setting"><h2>Our toys</h2><p>Untick anything you do not have. Its activities are hidden.</p>
       <div class="own">${TOYS.map((t) => `<button class="chip" data-act="own" data-v="${t.id}" aria-pressed="${s.toys.includes(t.id)}">${esc(t.name)}</button>`).join('')}</div>
     </div>
@@ -651,6 +687,10 @@ function guideText() {
     <p>Every activity starts on Easy, the smallest numbers and simplest set-ups. You choose each time. Mix gives a different difficulty for each set-up. Ramp up starts easy and gets harder.</p>
     <p>One set-up often has two or three questions. The app lays out a new set-up when it runs out, until you have had the number of questions you asked for.</p>
     <p>If you say an activity was too easy, it opens one harder next time. Too tricky, and it opens one easier.</p>
+
+    <h2>Ages</h2>
+    <p>Each activity says the age it starts from: 2½, 3 or 4. Add your child's month of birth in Settings and the ones for older children move to a "For later" group at the end of each list. They are still there to try, but Just pick one leaves them out.</p>
+    <p>The ages are a rough guide. They come from the curriculum guidance for England and from the ages of the children in the studies. No study tested these activities at these ages.</p>
 
     <h2>Stars</h2>
     <p>There is one star to win for each question. He gets it when he answers right, or when you tap Did it. Show the answer and Skip move on without one. Nothing is ever taken away.</p>
@@ -961,12 +1001,22 @@ document.addEventListener('keydown', (e) => {
     onHit(e.target);
   }
 });
+document.addEventListener('change', (e) => {
+  if (e.target.dataset?.change !== 'born') return; // the menus in the add-a-child form are read when it is sent
+  const box = e.target.closest('.born');
+  const born = bornFrom(box);
+  // Save once both menus are filled in, or when both have been cleared.
+  if (born || (!box.querySelector('[name="born-month"]').value && !box.querySelector('[name="born-year"]').value)) {
+    store.setBorn(born);
+    draw(true);
+  }
+});
 document.addEventListener('submit', (e) => {
   if (e.target.dataset.form !== 'add-child') return;
   e.preventDefault();
   const typed = new FormData(e.target).get('name').trim();
   const name = typed || pickedMascot[0].toUpperCase() + pickedMascot.slice(1); // no name typed: call them by their animal
-  store.addChild(name, pickedMascot, pickedPronoun);
+  store.addChild(name, pickedMascot, pickedPronoun, bornFrom(e.target));
   pickedMascot = null;
   pickedPronoun = 'he';
   if (!store.welcomed()) {

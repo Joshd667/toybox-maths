@@ -108,6 +108,7 @@ export default [
     needs: [],
     toys: ['duplo'],
     minutes: 5,
+    age: 3,
     research: ['verdine2014', 'ferrara2011'],
     why: 'This is the task from the research: 3-year-olds who were better at copying a brick model also did better at early maths. It is a link, not proof that one causes the other.',
     make(r, level) {
@@ -135,6 +136,7 @@ export default [
     needs: [],
     toys: ['wooden'],
     minutes: 5,
+    age: 3,
     research: ['verdine2014', 'casey2008', 'devmatters'],
     why: 'Choosing the right block for each job, like a flat one to bridge a gap or a triangle for a roof, is on the 3-and-4-year-old list.',
     make(r, level) {
@@ -161,6 +163,7 @@ export default [
     needs: ['A toy car, train or animal to go under'],
     toys: ['wooden', 'duplo'],
     minutes: 6,
+    age: 3,
     research: ['casey2008', 'ferrara2011', 'devmatters'],
     why: 'Building to a goal inside a little story gave the best spatial results in a block-building study, and brings out far more position words than free play.',
     make(r, level, ctx) {
@@ -197,6 +200,7 @@ export default [
     needs: ['A mug, bottle or shoe to measure against'],
     toys: ['duplo', 'wooden', 'cubes'],
     minutes: 5,
+    age: 2.5,
     research: ['devmatters', 'ncetm'],
     why: 'Building to match a height is measuring before rulers: he has to compare, adjust, and decide when it is "the same".',
     make(r, level, ctx) {
@@ -229,6 +233,7 @@ export default [
     needs: ['Wooden blocks or Duplo bricks for the fence'],
     toys: ['animals'],
     minutes: 6,
+    age: 3,
     research: ['casey2008', 'ferrara2011'],
     why: 'Fencing something in is one of the classic block-building steps: he has to close every gap and judge how much space is needed.',
     make(r, level) {
