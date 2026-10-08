@@ -4,7 +4,7 @@
 //   #/                 home: choose a toy (or a skill)
 //   #/toy/<id>         activities for one toy          #/skill/<id>   activities for one skill
 //   #/play/<id>/<toy>  an activity (get ready -> set up -> questions -> finish)
-//   #/progress         #/guide         #/settings      #/who  (the children)
+//   #/progress         #/settings      #/guide (About the research, opened from Settings)      #/who  (the children)
 // The very first time, a welcome is shown instead (welcome() below), whatever the address.
 // All taps are handled in one place near the bottom (onTap).
 
@@ -158,7 +158,7 @@ function list(kind, id) {
   const now = shown.filter((a) => !store.later(a));
   const older = shown.filter((a) => store.later(a)).sort((a, b) => a.age - b.age);
   const groups = (isToy ? [['', now]] : subSkills(id).map((k) => [k, now.filter((a) => a.skill === k)])).filter(([, acts]) => acts.length);
-  if (older.length) groups.push(['For later', older, `Aimed at children older than about ${ageWord(store.ageOf())}. Still fine to try.`]);
+  if (older.length) groups.push(['For later', older, `Aimed at children older than about ${ageWord(store.ageOf())}. Still fine to try: one that goes well moves up the list.`]);
   return `${topBar(title, '#/')}
   <section class="page">
     <button class="go small" data-act="pick-here">${icon.dice}<span>Pick one of these</span></button>
@@ -666,6 +666,7 @@ function settingsScreen() {
     <div class="setting"><h2>Our toys</h2><p>Untick anything you do not have. Its activities are hidden.</p>
       <div class="own">${TOYS.map((t) => `<button class="chip" data-act="own" data-v="${t.id}" aria-pressed="${s.toys.includes(t.id)}">${esc(t.name)}</button>`).join('')}</div>
     </div>
+    <a class="setting more" href="#/guide"><span><b>About the research</b><span>Keeping it play, what the studies do and do not show, and every source.</span></span>${icon.back}</a>
   </section>`;
 }
 // Put the look and animation settings into effect.
@@ -681,18 +682,8 @@ function guide() {
   return reword(guideText(), store.child()?.pronoun);
 }
 function guideText() {
-  return `${topBar('Guide')}
+  return `<header class="top"><a class="round" href="#/settings" aria-label="Back">${icon.back}</a><h1>About the research</h1></header>
   <section class="page guide">
-    <h2>How it works</h2>
-    <ol class="steps">
-      <li>Pick a toy, then an activity. Or tap Just pick one.</li>
-      <li>Check what you need. Choose how hard and how many questions, then tap Start.</li>
-      <li>Set up from the picture and tap Ready.</li>
-      <li>Read each question out. He answers with the toys or by tapping.</li>
-      <li>After the last question, say how it went.</li>
-    </ol>
-    <p>The round "i" button on any activity has what to watch for, easier and harder versions, and the research behind it.</p>
-
     <h2>Keeping it play</h2>
     <ul class="plain">
       <li><strong>You set the goal, he leads the doing.</strong> That is guided play, the approach the evidence favours over simply telling children things.</li>
@@ -700,20 +691,13 @@ function guideText() {
       <li><strong>Stop when he has had enough.</strong> There is no research-backed number of minutes for this age. Finish early whenever you like.</li>
       <li><strong>Talk.</strong> Much of the benefit in these studies came through the words adults used.</li>
       <li><strong>Praise the doing.</strong> "You checked every one" rather than "clever boy".</li>
-      <li><strong>Stars are a thank-you, not the point.</strong> The learning is in the toys and the talk.</li>
     </ul>
 
-    <h2>Easy, Medium and Hard</h2>
-    <p>Every activity starts on Easy, the smallest numbers and simplest set-ups. You choose each time. Mix gives a different difficulty for each set-up. Ramp up starts easy and gets harder.</p>
-    <p>One set-up often has two or three questions. The app lays out a new set-up when it runs out, until you have had the number of questions you asked for.</p>
-    <p>If you say an activity was too easy, it opens one harder next time. Too tricky, and it opens one easier.</p>
-
-    <h2>Ages</h2>
-    <p>Each activity says the age it starts from: 2½, 3 or 4. Add your child's month of birth in Settings and the ones for older children move to a "For later" group at the end of each list. They are still there to try, but Just pick one leaves them out.</p>
-    <p>The ages are a rough guide. They come from the curriculum guidance for England and from the ages of the children in the studies. No study tested these activities at these ages.</p>
-
-    <h2>Stars</h2>
-    <p>There is one star to win for each question. He gets it when he answers right, or when you tap Did it. Show the answer and Skip move on without one. Nothing is ever taken away.</p>
+    <h2>What the research does and does not say</h2>
+    <ul class="plain">
+      ${NOT_CLAIMED.map((t) => `<li>${esc(t)}</li>`).join('')}
+      <li>The age on each activity is a rough guide. It comes from the curriculum guidance for England and from the ages of the children in the studies. No study tested these activities at these ages.</li>
+    </ul>
 
     <h2>The kits you already have</h2>
     <ul class="plain">
@@ -722,13 +706,8 @@ function guideText() {
       <li><strong>Small parts.</strong> Pegs and linking cubes are labelled 3+. Stay with him while they are out.</li>
     </ul>
 
-    <h2>What the research does and does not say</h2>
-    <ul class="plain">${NOT_CLAIMED.map((t) => `<li>${esc(t)}</li>`).join('')}</ul>
-
-    <h2>On your phone</h2>
-    <p>To install, open this page in your phone's browser, open the share or menu button, and choose Add to Home Screen. It then works without a connection. Names and progress stay on this phone and are never sent anywhere.</p>
-
     <h2>Sources</h2>
+    <p>Each activity lists its own sources under the round "i" button. This is all of them.</p>
     <ul class="refs all">${Object.keys(REFS).map(refItem).join('')}</ul>
   </section>`;
 }
@@ -750,7 +729,7 @@ function screen() {
     if (html) return { html, tab: 'home' };
   }
   if (page === 'progress') return { html: progress(), tab: 'progress' };
-  if (page === 'guide') return { html: guide(), tab: 'guide' };
+  if (page === 'guide') return { html: guide(), tab: 'settings' };
   if (page === 'settings') return { html: settingsScreen(), tab: 'settings' };
   if (page === 'who') return { html: who(), tab: '' };
   return { html: home(), tab: 'home' };

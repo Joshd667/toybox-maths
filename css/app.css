@@ -557,6 +557,11 @@ button.tile { border: 3px solid transparent; position: relative; font: inherit; 
 .setting:first-child { margin-top: 4px; }
 .setting h2 { margin: 0 0 10px; }
 .setting p { color: var(--muted); font-size: 15px; margin: 8px 0 0; }
+.setting.more { display: flex; align-items: center; gap: 12px; text-decoration: none; color: var(--ink); }
+.setting.more > span { flex: 1; display: grid; gap: 2px; }
+.setting.more b { font-family: var(--display); font-weight: 500; font-size: 19px; }
+.setting.more span span { color: var(--muted); font-size: 15px; }
+.setting.more .ico { transform: rotate(180deg); color: var(--muted); }
 .setting h2 + p { margin: -4px 0 10px; }
 .own { display: flex; flex-wrap: wrap; gap: 8px; }
 .own .chip { background: var(--bg); }
@@ -572,7 +577,7 @@ body.calm .star.pop, body.calm .spin-face.landed { animation: none; }
 /* ------------------------------------------------------------ bottom tabs */
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   background: var(--surface); border-top: 2px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }

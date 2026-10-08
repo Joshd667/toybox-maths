@@ -9,7 +9,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 
 | File | What it is |
 |---|---|
-| `index.html` | The one page. Bottom tabs and an empty `<main>`. |
+| `index.html` | The one page. Three bottom tabs (Play, Progress, Settings) and an empty `<main>`. |
 | `css/app.css` | All styling. Colours and fonts are variables at the top. |
 | `js/app.js` | The screens and all tap handling. Routes are listed at the top of the file. |
 | `js/store.js` | Children's profiles and progress (saved on the phone), and how the next activity is chosen. |
@@ -105,7 +105,12 @@ A child's profile can hold a month of birth (`born: 'YYYY-MM'`, optional, typed 
   building, counting-like behaviour) or the Easy version is just that. 3 for the "3 and 4-year-olds" statements.
   4 for "Children in reception" ideas (counting sounds, number order, parts of a number, growing patterns) and for
   anything whose only evidence is from children of 4 and over.
-- The ages are a rough guide, and the Guide screen says so. Do not describe them as research findings.
+- An activity he has managed (last rated "just right" or "too easy") stops counting as later and joins the main list.
+- The ages are a rough guide, and the About the research page says so. Do not describe them as research findings.
+
+There is no Guide tab any more (the owner could not see what it was for). What was worth keeping is the
+"About the research" page, opened from the bottom of Settings: keeping it play, `NOT_CLAIMED`, the owner's kits, all sources.
+How the app works is covered by the welcome screens and each activity's "i" button; do not add a manual back.
 
 ## Writing rules
 

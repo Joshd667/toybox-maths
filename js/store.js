@@ -105,9 +105,11 @@ export function ageOf(c = child(), now = new Date()) {
   return months < 0 ? null : Math.round(months / 6) / 2;
 }
 // Is this activity aimed at children older than the one playing? Always false when we do not know the age.
+// An activity he has already managed (rated "just right" or "too easy") no longer counts as later, whatever his age.
 export function later(a) {
   const age = ageOf();
-  return age !== null && a.age > age;
+  if (age === null || a.age <= age) return false;
+  return !['right', 'easy'].includes(actState(a.id).last?.rating);
 }
 
 // ---------------------------------------------------------------- settings (shared by everyone on this phone)
