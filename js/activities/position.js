@@ -1,6 +1,6 @@
 // Position words: on, under, behind, between, first, last… said, heard and acted out.
 import {
-  A, lv, times, has, list, an,
+  A, lv, times, has, list, an, rabbitScene,
   row, column, model, build, block, car, animal, bunny, engine, wagon, train, onTrack, frame, text, arrow, hit, tag, flag, scale, layer, flow,
   BRICK_COLOURS, MORE_COLOURS, FARM,
 } from './kit.js';
@@ -13,6 +13,11 @@ function figure(r, ctx) {
 
 // One random "put the toy somewhere" picture and the sentence that goes with it.
 function placement(r, level, ctx) {
+  // With the rabbit game out, most turns use its own three blocks.
+  if (has(ctx, 'bunny') && r.bool(0.7)) {
+    const s = rabbitScene(r, level);
+    return { f: { name: 'rabbit', s: bunny() }, rel: s.rel, words: s.words, sprite: s.sprite, need: s.need };
+  }
   const f = figure(r, ctx);
   const [c1, c2] = r.sample(MORE_COLOURS, 2);
   const rel = r.pick(lv(level, ['on top of', 'under', 'next to', 'in'], ['behind', 'in front of', 'between', 'under', 'next to'], ['two']));
@@ -57,6 +62,7 @@ export default [
     toys: ['bunny', 'animals', 'wooden', 'duplo'],
     minutes: 3,
     age: 2.5,
+    upTo: 4,
     research: ['devmatters', 'pruden2011', 'purpura2017'],
     why: 'Understanding position "through words alone, with no pointing" is on the 3-and-4-year-old list. Children who hear more of these words do better on later spatial tasks.',
     make(r, level, ctx) {
@@ -83,6 +89,7 @@ export default [
     toys: ['bunny', 'animals', 'wooden', 'duplo'],
     minutes: 4,
     age: 3,
+    upTo: 4,
     research: ['pruden2011', 'ferrara2011'],
     why: 'It was children saying spatial words themselves, not just hearing them, that predicted later spatial skill.',
     make(r, level, ctx) {
@@ -110,6 +117,7 @@ export default [
     toys: ['duplo'],
     minutes: 4,
     age: 3,
+    upTo: 4,
     research: ['devmatters', 'ferrara2011', 'verdine2014'],
     why: 'Building from spoken steps joins two things the research links to early maths: position words and putting a model together.',
     make(r, level) {
@@ -160,6 +168,7 @@ export default [
     toys: ['animals'],
     minutes: 3,
     age: 3,
+    upTo: 5,
     research: ['devmatters', 'purpura2017'],
     why: '"First", "last", "behind" and "in front of" are both position words and maths words. They describe order, which is what a number line is.',
     make(r, level) {
@@ -214,6 +223,7 @@ export default [
     toys: ['cars', 'brio', 'animals'],
     minutes: 5,
     age: 3,
+    upTo: 5,
     research: ['devmatters', 'pruden2011'],
     why: 'Describing a route and using "first… then…" for a sequence are both on the 3-and-4-year-old list.',
     make(r, level, ctx) {

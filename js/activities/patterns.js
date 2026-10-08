@@ -44,6 +44,7 @@ export default [
     toys: ALL,
     minutes: 3,
     age: 3,
+    upTo: 5,
     research: ['rittle2013', 'devmatters', 'rittle2019'],
     why: 'Continuing a repeating pattern is on the 3-and-4-year-old list, and pattern skill at this age predicts later maths.',
     make(r, level, ctx) {
@@ -80,6 +81,7 @@ export default [
     toys: ALL,
     minutes: 3,
     age: 3,
+    upTo: 5,
     research: ['devmatters', 'rittle2013'],
     why: 'Noticing and fixing an error in a repeating pattern is named directly on the 3-and-4-year-old maths list.',
     make(r, level, ctx) {
@@ -117,6 +119,7 @@ export default [
     toys: ALL,
     minutes: 4,
     age: 3,
+    upTo: 4,
     research: ['rittle2013', 'devmatters'],
     why: 'Copying is the first step in the research on how pattern skill grows: copy, continue, then rebuild it with different things.',
     make(r, level, ctx) {
@@ -147,6 +150,7 @@ export default [
     levels: [2, 3],
     minutes: 5,
     age: 4,
+    upTo: 5,
     research: ['rittle2013', 'fyfe2015'],
     why: 'Rebuilding a pattern with different things shows he has the structure, not just the colours. Naming it "A, B, B" helped children do this in one study.',
     make(r, level, ctx) {
@@ -184,6 +188,7 @@ export default [
     levels: [2, 3],
     minutes: 4,
     age: 4,
+    upTo: 5,
     research: ['ncetm', 'sarnecka2008'],
     why: 'A staircase is a pattern that grows. Each step is one more than the last, which is the same idea as counting.',
     make(r, level) {
@@ -218,6 +223,7 @@ export default [
     toys: [],
     minutes: 2,
     age: 3,
+    upTo: 4,
     research: ['rittle2013', 'devmatters'],
     why: 'A pattern is a rule, not a set of colours. Doing one with your body shows the same idea with no toys at all.',
     make(r, level) {
@@ -247,6 +253,7 @@ export default [
     levels: [3],
     minutes: 3,
     age: 4,
+    upTo: 5,
     research: ['rittle2013'],
     why: 'Naming the part that repeats is the hardest pattern skill. In the research few 4-year-olds could do it, so this is a real stretch.',
     make(r, level, ctx) {
@@ -278,6 +285,7 @@ export default [
     toys: ALL,
     minutes: 5,
     age: 3,
+    upTo: 5,
     research: ['devmatters', 'weisberg2013'],
     why: 'Making his own pattern for you to copy puts him in charge, which is the heart of guided play.',
     make(r, level, ctx) {

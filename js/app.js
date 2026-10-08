@@ -39,7 +39,7 @@ const toyArt = {
   brio: () => D.row([D.wagon(D.cube('yellow'), 'blue'), D.engine('red')], { gap: 1 }),
   cubes: () => D.rod(['purple', 'purple', 'green', 'green']),
   numicon: () => D.row([D.numicon(3, 13), D.numicon(4, 13)], { gap: 6 }),
-  bunny: () => D.bunny(),
+  bunny: () => D.layer([[D.bunny(), 6, 0], [D.peek('yellow'), 0, 6]]),
   none: () => D.row([D.card(1, 40), D.card(2, 40), D.card(3, 40)], { gap: 3 }),
 };
 const toyName = (id) => TOY_TILES.find((t) => t.id === id)?.name || '';
@@ -52,8 +52,10 @@ const subSkills = (id) => [...new Set(forSkill(id).map((a) => a.skill))];
 const MASCOTS = ['giraffe', 'elephant', 'lion', 'duck', 'pig', 'cow', 'sheep', 'horse'];
 const mascot = (c) => pic(D.animal(c?.animal || 'giraffe'));
 
-// Ages. An activity's `age` is the youngest age its Easy version is aimed at: 2.5, 3 or 4.
+// Ages. An activity's `age` is the youngest age its Easy version is aimed at (2.5, 3 or 4); `upTo` is the age its hardest is aimed at.
 const ageWord = (n) => (n % 1 ? `${Math.floor(n)}½` : String(n));
+// The pill on every activity: the age its easiest version is aimed at, to the age its hardest is.
+const agePill = (a) => `<b class="age">Age ${ageWord(a.age)} to ${ageWord(a.upTo)}</b>`;
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 // Two menus for the month of birth. `born` is 'YYYY-MM' or empty; `act` is what a change does.
 function bornFields(act, born) {
@@ -149,7 +151,7 @@ function list(kind, id) {
     const last = store.actState(a.id).last;
     return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
       <span class="li-title">${esc(a.title)}</span>
-      <span class="li-meta"><b class="age">Age ${ageWord(a.age)}+</b>${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
+      <span class="li-meta">${agePill(a)}${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
       ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
     </a></li>`;
   };
@@ -295,7 +297,7 @@ function readyScreen() {
   const choose = toys.length > 1;
   return `${playTop()}
   <section class="page stage ready">
-    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span><b class="age">Age ${ageWord(a.age)}+</b></p>
+    <p class="tagline" style="--c:${s.colour}"><span class="pill">${esc(s.name)}</span><span>${esc(a.skill)}</span>${agePill(a)}</p>
     <div class="card eg">
       <h2>The game</h2>
       ${egPic ? `<figure class="fig">${render(egPic.sprite, { label: 'Example set-up' })}</figure>` : ''}
@@ -696,13 +698,14 @@ function guideText() {
     <h2>What the research does and does not say</h2>
     <ul class="plain">
       ${NOT_CLAIMED.map((t) => `<li>${esc(t)}</li>`).join('')}
-      <li>The age on each activity is a rough guide. It comes from the curriculum guidance for England and from the ages of the children in the studies. No study tested these activities at these ages.</li>
+      <li>The age range on each activity is a rough guide: the first age is for the Easy version, the second for the hardest. It comes from the curriculum guidance for England and from the ages of the children in the studies. No study tested these activities at these ages.</li>
     </ul>
 
     <h2>The kits you already have</h2>
     <ul class="plain">
       <li><strong>Numicon First Steps.</strong> Work through its own activity book in order. The Numicon activities here are extras.</li>
-      <li><strong>The rabbit game.</strong> Its own challenge cards are the main event.</li>
+      <li><strong>The rabbit game.</strong> Its own challenge cards are the main event. The rabbit activities here use the same three blocks with our own pictures.</li>
+      <li><strong>Train track.</strong> The track activities use long straights, short straights and curves only. Swap in whatever lengths you have.</li>
       <li><strong>Small parts.</strong> Pegs and linking cubes are labelled 3+. Stay with him while they are out.</li>
     </ul>
 

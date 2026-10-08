@@ -17,10 +17,14 @@ export default [
     toys: [...ANY, 'brio'],
     minutes: 3,
     age: 2.5,
-    research: ['gelman1978', 'mix2012', 'devmatters'],
+    upTo: 4,
+    research: ['gelman1978', 'mix2012', 'devmatters', 'petersen2013'],
     why: 'Touching each toy once with one number each, then saying the total again, is what links counting to "how many".',
     make(r, level, ctx) {
-      const toy = pickToy(r, ctx, this.toys);
+      // Easy and Medium stick to plain bricks and cubes when there are some: in one study, toys children already
+      // knew and played with got in the way of counting, and plain objects did not.
+      const plain = ['cubes', 'duplo', 'wooden'].filter((t) => has(ctx, t));
+      const toy = pickToy(r, ctx, level < 3 && plain.length ? plain : this.toys);
       const n = r.int(...lv(level, [2, 5], [4, 8], [7, 12]));
       const vals = times(n, () => r.pick(toy.vary));
       const items = vals.map((v) => toy.make(r, v));
@@ -42,6 +46,7 @@ export default [
         look: [
           'Does he touch each toy once, with one number for each?',
           'Ask "so how many?" afterwards. Does he say the last number, or start counting again?',
+          ...(level < 3 ? ['Plain bricks and cubes are the easier thing to count. Toys he loves to play with can pull him off the counting.'] : []),
         ],
         easier: 'Use fewer toys, spaced out in a line.',
         harder: lv(level, 'Jumble them up.', 'Jumble them up.', 'Add a few more toys.') + ' Show him how to slide each one aside as he counts it.',
@@ -59,6 +64,7 @@ export default [
     toys: ANY,
     minutes: 4,
     age: 3,
+    upTo: 5,
     research: ['wynn1990', 'sarnecka2008'],
     why: 'Fetching exactly the right number is harder than counting a line, and shows whether a number word really means that amount to him.',
     make(r, level, ctx) {
@@ -88,6 +94,7 @@ export default [
     toys: ['animals'],
     minutes: 4,
     age: 2.5,
+    upTo: 4,
     research: ['gelman1978', 'devmatters'],
     why: 'Giving one to each is the same one-to-one matching that counting depends on.',
     make(r, level, ctx) {
@@ -124,6 +131,7 @@ export default [
     toys: [],
     minutes: 2,
     age: 3,
+    upTo: 5,
     research: ['clements1999', 'devmatters'],
     why: 'Seeing "three" at a glance without counting is called subitising. It is one of the first things on the 3-and-4-year-old maths list.',
     make(r, level) {
@@ -162,6 +170,7 @@ export default [
     toys: ['brio'],
     minutes: 3,
     age: 2.5,
+    upTo: 4,
     research: ['gelman1978', 'gunderson2011'],
     why: 'Counting only the wagons, and not the engine, means deciding what counts before you start.',
     make(r, level) {
@@ -198,6 +207,7 @@ export default [
     toys: ['duplo', 'cubes'],
     minutes: 3,
     age: 3,
+    upTo: 5,
     research: ['sarnecka2008', 'devmatters'],
     why: 'Knowing that the next number means exactly one more is the idea that turns the counting chant into real numbers.',
     make(r, level) {
@@ -232,6 +242,7 @@ export default [
     toys: ['numicon'],
     minutes: 3,
     age: 3,
+    upTo: 4,
     research: ['eef2020', 'gelman1978'],
     why: 'One peg in each hole is one-to-one matching you can see, and each shape always looks like its number.',
     make(r, level) {
@@ -260,6 +271,7 @@ export default [
     toys: [],
     minutes: 2,
     age: 4,
+    upTo: 5,
     research: ['gelman1978', 'devmatters'],
     why: 'Anything can be counted, including sounds you cannot see or touch.',
     make(r, level) {
@@ -297,6 +309,7 @@ export default [
     toys: ANY,
     minutes: 4,
     age: 3,
+    upTo: 5,
     research: ['gelmanmeck1983', 'gelman1978'],
     why: 'Children can often spot a counting mistake before they can count that many themselves. Catching it means they know the rules.',
     make(r, level, ctx) {

@@ -17,6 +17,7 @@ export default [
     toys: ANY,
     minutes: 3,
     age: 2.5,
+    upTo: 4,
     research: ['devmatters', 'purpura2017'],
     why: '"More" and "fewer" are among the first maths words on the curriculum, and teaching maths words was shown to improve maths itself.',
     make(r, level, ctx) {
@@ -66,6 +67,7 @@ export default [
     toys: ['animals'],
     minutes: 4,
     age: 3,
+    upTo: 5,
     research: ['frydman1988', 'devmatters'],
     why: 'Dealing out "one for you, one for you" is how young children first make equal groups.',
     make(r, level, ctx) {
@@ -103,6 +105,7 @@ export default [
     toys: ['duplo', 'cubes'],
     minutes: 3,
     age: 2.5,
+    upTo: 4,
     research: ['devmatters', 'ncetm'],
     why: 'Standing two towers side by side turns "more" into something he can see, and "how many more" into bricks he can count.',
     make(r, level, ctx) {
@@ -152,6 +155,7 @@ export default [
     toys: ['duplo', 'cubes'],
     minutes: 4,
     age: 2.5,
+    upTo: 4,
     research: ['devmatters', 'sarnecka2008'],
     why: 'Making "the same" and then "one more" compares two amounts without needing big numbers.',
     make(r, level, ctx) {
@@ -187,6 +191,7 @@ export default [
     toys: ['cars', 'animals'],
     minutes: 4,
     age: 3,
+    upTo: 4,
     research: ['gelman1978', 'devmatters'],
     why: 'Matching one to one shows which group has more without counting at all, and makes "how many more do we need" a real problem.',
     make(r, level, ctx) {

@@ -30,6 +30,7 @@ export default [
     toys: [],
     minutes: 2,
     age: 3,
+    upTo: 5,
     research: ['devmatters', 'ramani2008'],
     why: 'Naming written numbers is a separate skill from counting, and one of the things number games were shown to improve.',
     make(r, level) {
@@ -65,6 +66,7 @@ export default [
     toys: ANY,
     minutes: 4,
     age: 3,
+    upTo: 5,
     research: ['devmatters', 'wynn1990'],
     why: 'Matching a written number to the right amount of toys is on the 3-and-4-year-old maths list (up to 5).',
     make(r, level, ctx) {
@@ -94,6 +96,7 @@ export default [
     toys: ['numicon'],
     minutes: 3,
     age: 3,
+    upTo: 5,
     research: ['eef2020', 'devmatters'],
     why: 'Each Numicon shape is a fixed picture of its number, which gives the written numeral something to stand for.',
     make(r, level) {
@@ -140,6 +143,7 @@ export default [
     toys: ['duplo', 'cubes'],
     minutes: 3,
     age: 3,
+    upTo: 4,
     research: ['devmatters', 'eef2020'],
     why: 'Picking the tower that matches a numeral links the symbol to an amount he can see and hold.',
     make(r, level, ctx) {
@@ -177,6 +181,7 @@ export default [
     toys: [],
     minutes: 3,
     age: 4,
+    upTo: 5,
     research: ['ramani2008', 'devmatters'],
     why: 'Seeing numbers in a line, in order, builds a mental number line.',
     make(r, level) {
@@ -210,6 +215,7 @@ export default [
     toys: ['cars', 'animals', 'brio'],
     minutes: 6,
     age: 4,
+    upTo: 5,
     research: ['ramani2008'],
     why: 'This is the board game from the research: a straight track numbered 1 to 10, a spinner with 1 and 2, and saying the numbers you land on. About an hour of play in total improved four different number skills in 4-year-olds.',
     make(r, level, ctx) {
@@ -241,6 +247,7 @@ export default [
     toys: [],
     minutes: 4,
     age: 4,
+    upTo: 5,
     research: ['devmatters', 'ramani2008'],
     why: 'Ordering numerals builds the sense that numbers sit in a fixed line, each one bigger than the last.',
     make(r, level) {
@@ -262,6 +269,80 @@ export default [
         easier: lv(level, 'Use just 1 and 2, then add 3.', 'Use 1, 2 and 3.'),
         harder: lv(level, 'Use 1 to 5.', 'Start from a number other than 1, or put a matching tower under each card.', 'Use more cards, or put a matching tower under each card.'),
         words: ['first', 'next', 'last', 'before', 'after'],
+      };
+    },
+  }),
+  A({
+    id: 'numicon-order',
+    title: 'Shapes in order',
+    strand: 'numerals',
+    skill: 'Number order',
+    needs: [],
+    toys: ['numicon'],
+    minutes: 4,
+    age: 3,
+    upTo: 5,
+    research: ['sarnecka2008', 'carbonneau2013', 'eef2020'],
+    why: 'Lined up in order the shapes make stairs, each one hole bigger than the last. That is "the next number is one more", the idea that separates real counting from reciting, in a form he can see and feel.',
+    make(r, level) {
+      const line = (vs, cell = 12) => row(vs.map((v) => (v === null ? qbox(cell * 2, cell * 2) : numicon(v, cell))), { gap: 5 });
+      const next = (k) => {
+        const opts = r.shuffle([k + 1, ...r.sample([k + 2, k + 3, k - 1].filter((v) => v >= 1 && v <= 10), 2)]);
+        return { ask: 'Which shape comes next?', answer: { type: 'pick', options: opts.map((v) => ({ key: String(v), sprite: numicon(v, 11) })), correct: String(k + 1) }, reveal: { caption: `The ${k + 1} shape: one more hole than the ${k}.` } };
+      };
+      if (level === 1) {
+        const k = r.int(3, 4);
+        const all = times(k, (i) => i + 1);
+        let mixed = r.shuffle(all);
+        if (mixed.every((v, i) => v === all[i])) mixed = [...all].reverse();
+        return {
+          setup: [`Put out the shapes 1 to ${k} in a muddle.`],
+          scenes: [{ sprite: line(mixed, 14) }],
+          ask: 'Can you line them up from the smallest to the biggest?',
+          answer: { type: 'do' },
+          reveal: { caption: 'Like stairs going up, one hole more each time.', sprite: line(all, 14) },
+          more: [{ ...next(k), scenes: [{ sprite: row([line(all, 14), qbox(28, 40)], { gap: 5 }) }] }, numQ(r, 'How many holes are in the biggest one in your line?', k, undefined, { min: 1 })],
+          look: ['Does he find the smallest first and build up, or try them anywhere?', 'Run a finger up the stairs, saying the numbers.'],
+          easier: 'Use the 1, 2 and 3 only, and line the bottoms up for him.',
+          harder: 'Add the next two shapes and ask where they go.',
+          words: ['smallest', 'biggest', 'next', 'one more', 'in order'],
+        };
+      }
+      if (level === 2) {
+        const k = r.int(5, 7);
+        const m = r.int(2, k - 1);
+        const all = times(k, (i) => i + 1);
+        const opts = r.shuffle([m, k + 1, k + 2]);
+        return {
+          setup: [`Line up the shapes 1 to ${k} in order, but leave out the ${m}. Leave a gap where it goes.`, `Put the ${list([...opts].sort((a, b) => a - b).map(String))} shapes to one side.`],
+          scenes: [{ sprite: line(all.map((v) => (v === m ? null : v))) }],
+          ask: 'One shape is missing. Which one goes in the gap?',
+          answer: { type: 'pick', options: opts.map((v) => ({ key: String(v), sprite: numicon(v, 11) })), correct: String(m) },
+          reveal: { caption: `The ${m} shape: one more than the ${m - 1} and one fewer than the ${m + 1}.`, sprite: line(all) },
+          more: [numQ(r, 'How many holes does the missing shape have?', m, undefined, { min: 1 }), { ...next(k), scenes: [{ sprite: row([line(all), qbox(24, 40)], { gap: 5 }) }] }],
+          look: ['Does he look at the shapes on each side of the gap?', 'Does he try the shape in the gap to check the stairs still go up evenly?'],
+          easier: 'Use the shapes 1 to 4 with one missing.',
+          harder: 'Leave out two shapes.',
+          words: ['missing', 'gap', 'before', 'after', 'one more', 'one fewer'],
+        };
+      }
+      const k = r.int(8, 10);
+      const all = times(k, (i) => i + 1);
+      const i = r.int(0, k - 3);
+      const j = i + r.int(1, 2);
+      const swapped = [...all];
+      [swapped[i], swapped[j]] = [swapped[j], swapped[i]];
+      return {
+        setup: [`Line up the shapes 1 to ${k} in order, then swap the ${all[i]} and the ${all[j]}.`],
+        scenes: [{ sprite: row(swapped.map((v) => hit(numicon(v, 12), 'n' + v)), { gap: 5 }) }],
+        ask: 'Two shapes are in the wrong place. Which two?',
+        answer: { type: 'tap', multi: true, correct: ['n' + all[i], 'n' + all[j]] },
+        reveal: { caption: `The ${all[i]} and the ${all[j]}. Swap them back and the stairs go up evenly.`, sprite: line(all) },
+        more: [{ ...numQ(r, `Swap them back. How many holes in the shape just after the ${all[i]}?`, all[i] + 1, undefined, { min: 1 }), scenes: [{ sprite: line(all) }] }, { ...numQ(r, `And in the shape just before the ${all[j]}?`, all[j] - 1, undefined, { min: 1 }), scenes: [{ sprite: line(all) }] }],
+        look: ['Does he spot where the stairs go down instead of up?', 'Can he say why: "this one is too big to be here"?'],
+        easier: 'Use the shapes 1 to 6.',
+        harder: 'He shuts his eyes, you swap two, and he puts them right. Then swap roles.',
+        words: ['before', 'after', 'in order', 'too big', 'too small', 'swap'],
       };
     },
   }),

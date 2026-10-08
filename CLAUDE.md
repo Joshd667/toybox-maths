@@ -1,6 +1,7 @@
 # Toybox Maths: notes for whoever works on this next (human or AI)
 
 A phone web app (PWA) of early maths activities for one family: a parent and young children, the eldest about three.
+`PLAN.md` says what was reviewed in October 2026, what was built from it, and what is still to do (activities for 1- to 2-year-olds).
 Plain HTML, CSS and JavaScript modules. **No framework, no build step, no dependencies.** Keep it that way.
 
 Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` publishes.
@@ -35,6 +36,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
    - `id`: unique, lower-case-with-dashes. Never change an id later (progress is saved against it).
    - `title`, `strand`, `minutes` (1 to 10)
    - `age`: 2.5, 3 or 4. The youngest age the Easy version is aimed at (see "Ages" below).
+   - `upTo`: 3, 4 or 5, and above `age`. The age the hardest version is aimed at. Together they make the age pill ("Age 3 to 5").
    - `skill`: the sub-skill inside the strand, shown to the parent ("Counting out"). Reuse one the strand already has; a strand has 2 to 4.
    - `needs`: extra things to fetch besides the toys ("A plate or box"), listed on the Get ready screen. `[]` if none.
    - `toys`: ids from `TOYS` in `index.js`; any one of them is enough to play. `[]` means no toys needed.
@@ -70,7 +72,10 @@ A new strand file must also be imported in `js/activities/index.js`.
 ## Pictures
 
 A sprite is `{ w, h, svg }`. Toys: `car`, `animal`, `duplo`, `tower`, `model`, `block`, `build`, `cube`, `rod`,
-`numicon`, `card`, `numeral`, `dots`, `engine`, `wagon`, `train`, `bunny`, `flat`, `ramp`.
+`numicon`, `numiconStack` (shapes fitted together), `card`, `numeral`, `dots`, `engine`, `wagon`, `train`,
+`trackPlan` (track from above, piece by piece), `bunny`, `peek` (the rabbit game's blocks), `flat`.
+(`ramp` and `trackPath` are still in `draw.js` but nothing uses them: see `PLAN.md` for why there is no ramp activity.)
+`kit.js` adds `trackList`, `mirror`, `sized` (toys drawn in different sizes) and `rabbitScene`.
 Layout: `row`, `column`, `grid`, `flow` (wraps), `scatter`, `layer`, `scale`, `frame`, `tag`, `ring`, `hit`.
 Compose these; do not write raw SVG in activity files. If a new toy is needed, add it to `draw.js`.
 Keep pictures under about 500 units wide. Use colour names from `PAL` so the words and the picture always agree.
@@ -89,12 +94,20 @@ A new animal needs those parts too, or it will dance as a stiff cut-out.
   the children's ages, and a `caveat` for what it does not show. If you could not read the abstract, set `checked: 'citation only'`.
 - Most of this evidence is correlational and from 3½- to 5-year-olds. Say so. Do not write "proven" or "boosts".
 - `NOT_CLAIMED` in `research.js` lists things we looked for and could not support (for example, any trial evidence for
-  Numicon, or a research-backed session length). Do not add them back without a real source.
+  Numicon, a research-backed session length, any study of train track, ramps under 5, or patterns under 4).
+  Do not add them back without a real source.
+- When the only support is curriculum guidance, say so in `why` ("This rests on curriculum guidance").
+- In one study familiar, detailed toys got in the way of counting (`petersen2013`), so `count-line` on Easy and Medium uses plain bricks
+  and cubes when the family has them. Keep that in mind for new counting activities.
 - No fads: no "brain training", learning styles, or claims of lasting advantage from starting early.
 
 ## Ages
 
-Every activity has an `age` of 2.5, 3 or 4, shown as an "Age 3+" label on each row of the lists and at the top of the Get ready screen.
+Every activity has an `age` of 2.5, 3 or 4 and an `upTo` of 3, 4 or 5, shown as a pill ("Age 3 to 5") on each row of the lists
+and at the top of the Get ready screen. The owner asked for a range, not "3+".
+The first time a child opens an activity, `suggest()` in `store.js` picks the difficulty from their age and that range:
+at or below `age` it is the easiest, at or above `upTo` the hardest, otherwise in between (rounding down, to start gently). After that it follows the ratings.
+`upTo` is a judgement about the Hard version (4 if it stays inside the "3 and 4-year-olds" statements, 5 if it reaches Reception ideas).
 A child's profile can hold a month of birth (`born: 'YYYY-MM'`, optional, typed in on the phone and saved only there).
 `ageOf()` in `store.js` rounds the child's age to the nearest half year; `later(a)` says an activity is aimed at someone older.
 
@@ -111,6 +124,30 @@ A child's profile can hold a month of birth (`born: 'YYYY-MM'`, optional, typed 
 There is no Guide tab any more (the owner could not see what it was for). What was worth keeping is the
 "About the research" page, opened from the bottom of Settings: keeping it play, `NOT_CLAIMED`, the owner's kits, all sources.
 How the app works is covered by the welcome screens and each activity's "i" button; do not add a manual back.
+
+## The owner's toys, exactly
+
+Ask before assuming anything beyond this. `PLAN.md` lists what is still unknown.
+
+- **Train track.** Long straights, short straights and curves. **No points, no tunnel.** Do not write an activity that needs them.
+  In `trackPlan` a curve is an eighth of a circle and about as long as a long straight, so "count the pieces" is a fair way to compare lengths.
+- **Animals and cars.** A random mix in random sizes, not matched sets. So a size activity cannot say "the small cow":
+  it says "pick any three that are clearly different sizes", the picture is captioned as an example, and the answer type is `do` or `open`.
+  When exact sizes matter (as in `three-sizes`), use towers of bricks or cubes, which can be built to order.
+- **Duplo.** Square (2 by 2) and long (2 by 4) bricks. Two squares cover one long one.
+- **The rabbit game.** A wooden rabbit and three blocks: a hollow **blue box** (open at the front, round holes in the sides,
+  a star-shaped hole in the top), a **yellow block** with a round hole right through it, which fits inside the blue box,
+  and a low **red block** with a dip in the top. Checked against the maker's own photographs in October 2026.
+  `peek()` draws our own plain versions; never copy the challenge-card artwork.
+- **Numicon First Steps at home kit.** Shapes 1 to 10 (32 in all, so there are twins), pegs, a baseboard, picture overlays,
+  a feely bag, numeral cards 0 to 10, a number line. The kit is labelled 3+ for small parts, so no Numicon activity starts below 3.
+
+## Borrowing from Montessori
+
+The owner asked whether Montessori could feature. The honest answer, recorded in `NOT_CLAIMED`, is "ideas borrowed from, not a claim".
+What we borrow is what Montessori shares with general research on objects to handle (`laski2015`): change one thing at a time
+(`order-size` on Easy uses one colour, so only height varies), come back to the same plain objects (`numicon-same`), and let the toy
+show the mistake (a loop of track closes or it does not). Do not label an activity "Montessori" or cite the school studies as support for it.
 
 ## Writing rules
 

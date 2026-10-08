@@ -375,6 +375,138 @@ export function trackPath(d, w, h) {
   );
 }
 
+// Wooden track seen from above, drawn piece by piece so the joins show and the pieces can be counted.
+// pieces is a string, one letter per piece, laid end to end from the left:
+//   S long straight   s short straight (half as long)   L curve bending left   R curve bending right
+// A curve is an eighth of a circle (8 make a ring) and about as long as a long straight, as in wooden train sets.
+// o.gap: index of a piece to leave out, drawn as a dashed "?" space.
+const TL = 40;
+const TR = 51;
+export const TRACK_NAME = { S: 'long straight', s: 'short straight', L: 'curve', R: 'curve' };
+export function trackPlan(pieces, o = {}) {
+  const rad = (d) => (d * Math.PI) / 180;
+  let x = 0;
+  let y = 0;
+  let h = 0; // heading in degrees: 0 is to the right, and y grows down the screen
+  const segs = [];
+  const pts = [[0, 0]];
+  for (const k of pieces) {
+    const from = [x, y, h];
+    let d;
+    if (k === 'S' || k === 's') {
+      const len = k === 'S' ? TL : TL / 2;
+      x += len * Math.cos(rad(h));
+      y += len * Math.sin(rad(h));
+      d = `M${R(from[0])} ${R(from[1])}L${R(x)} ${R(y)}`;
+      pts.push([x, y]);
+    } else {
+      const side = k === 'L' ? -1 : 1; // left is anticlockwise on the screen
+      const cx = x - side * TR * Math.sin(rad(h));
+      const cy = y + side * TR * Math.cos(rad(h));
+      const a0 = Math.atan2(y - cy, x - cx);
+      for (const t of [0.5, 1]) pts.push([cx + TR * Math.cos(a0 + side * rad(45) * t), cy + TR * Math.sin(a0 + side * rad(45) * t)]);
+      [x, y] = pts[pts.length - 1];
+      h += side * 45;
+      d = `M${R(from[0])} ${R(from[1])}A${TR} ${TR} 0 0 ${side === 1 ? 1 : 0} ${R(x)} ${R(y)}`;
+    }
+    segs.push({ d, from, mid: pts[pts.length - (k === 'S' || k === 's' ? 1 : 2)] });
+    if (k === 'S' || k === 's') segs[segs.length - 1].mid = [(from[0] + x) / 2, (from[1] + y) / 2];
+  }
+  const P = 10;
+  const minX = Math.min(...pts.map((p) => p[0])) - P;
+  const minY = Math.min(...pts.map((p) => p[1])) - P;
+  const w = Math.max(...pts.map((p) => p[0])) + P - minX;
+  const hgt = Math.max(...pts.map((p) => p[1])) + P - minY;
+  const base = `fill="none" stroke-linecap="butt"`;
+  const dark = shade(PAL.wood, -0.3);
+  let svg = '';
+  segs.forEach((g, i) => {
+    if (i === o.gap) {
+      svg += `<path d="${g.d}" ${base} stroke="#fff" stroke-opacity=".7" stroke-width="14"/><path d="${g.d}" ${base} stroke="#7A8499" stroke-width="14" stroke-opacity=".28" stroke-dasharray="4 4"/>`;
+      const q = text('?', 13, { bold: true, color: '#4A5670' });
+      svg += at(q, g.mid[0] - q.w / 2, g.mid[1] - q.h / 2);
+      return;
+    }
+    svg +=
+      `<path d="${g.d}" ${base} stroke="${dark}" stroke-width="15"/>` +
+      `<path d="${g.d}" ${base} stroke="${PAL.wood}" stroke-width="13"/>` +
+      `<path d="${g.d}" ${base} stroke="${shade(PAL.wood, -0.22)}" stroke-width="8"/>` +
+      `<path d="${g.d}" ${base} stroke="${PAL.wood}" stroke-width="5.6"/>`;
+  });
+  // a line across the track at each join
+  segs.forEach((g, i) => {
+    if (!i) return;
+    const [jx, jy, jh] = g.from;
+    const nx = -Math.sin(rad(jh)) * 7.5;
+    const ny = Math.cos(rad(jh)) * 7.5;
+    svg += `<path d="M${R(jx - nx)} ${R(jy - ny)}L${R(jx + nx)} ${R(jy + ny)}" stroke="${dark}" stroke-width="1.4"/>`;
+  });
+  return sp(R(w), R(hgt), `<g transform="translate(${R(-minX)} ${R(-minY)})">${svg}</g>`);
+}
+
+// ---------------------------------------------------------------- rabbit game blocks
+// Our own plain drawings of the three wooden pieces in the owner's rabbit hide-and-seek game, seen from the front:
+// a hollow blue box (open at the front, a star-shaped hole in the top), a yellow block with a round hole
+// right through it, and a low red block with a dip in the top. See CLAUDE.md, "The rabbit game".
+export const PEEK_NAME = { blue: 'blue box', yellow: 'yellow block', red: 'red block' };
+export function peek(kind, inside = null) {
+  if (kind === 'blue') {
+    const c = PAL.blue;
+    const d = shade(c, -0.3);
+    const S = 66;
+    const T = 9;
+    return sp(
+      S,
+      S + T,
+      `<rect x=".6" y=".6" width="${S - 1.2}" height="${T + 2}" rx="2" fill="${shade(c, 0.22)}" stroke="${d}" stroke-width="1.2"/>` +
+        `<path transform="translate(${S / 2 - 6} -1.2) scale(.5)" d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z" fill="${shade(c, -0.55)}"/>` +
+        `<rect x=".6" y="${T + 0.6}" width="${S - 1.2}" height="${S - 1.2}" rx="3" fill="${c}" stroke="${d}" stroke-width="1.2"/>` +
+        `<rect x="9" y="${T + 9}" width="${S - 18}" height="${S - 18}" rx="2" fill="${shade(c, -0.5)}" stroke="${d}" stroke-width="1"/>` +
+        (inside ? at(inside, (S - inside.w) / 2, T + S - 9 - inside.h) : '')
+    );
+  }
+  if (kind === 'yellow') {
+    const c = PAL.yellow;
+    return sp(
+      46,
+      46,
+      `<path fill-rule="evenodd" d="M3 .6H43Q45.4 .6 45.4 3V43Q45.4 45.4 43 45.4H3Q.6 45.4 .6 43V3Q.6 .6 3 .6ZM23 10A13 13 0 1 0 23.01 10Z" fill="${c}" stroke="${shade(c, -0.3)}" stroke-width="1.2"/>`
+    );
+  }
+  const c = PAL.red;
+  return sp(54, 20, `<path d="M3 .6H12A15 11 0 0 0 42 .6H51Q53.4 .6 53.4 3V19.4H.6V3Q.6 .6 3 .6Z" fill="${c}" stroke="${shade(c, -0.3)}" stroke-width="1.2" stroke-linejoin="round"/>`);
+}
+
+// ---------------------------------------------------------------- Numicon shapes fitted together
+// Stack Numicon shapes so they cover the same holes as one bigger shape. parts: the numbers, e.g. [3, 5].
+// Even shapes go at the bottom; an odd one sits upright on them; a second odd one is turned round to lock into the first.
+// At most two odd shapes.
+export function numiconStack(parts, cell = 15) {
+  const total = parts.reduce((a, b) => a + b, 0);
+  const H = Math.ceil(total / 2) * cell;
+  const order = [...parts.filter((p) => p % 2 === 0), ...parts.filter((p) => p % 2 === 1)];
+  let rowsDone = 0; // full rows covered so far
+  let half = false; // is the next row already half covered (left hole only)?
+  let svg = '';
+  for (const p of order) {
+    const s = numicon(p, cell);
+    if (p % 2 === 0) {
+      svg += at(s, 0, H - rowsDone * cell - s.h);
+      rowsDone += p / 2;
+    } else if (!half) {
+      svg += at(s, 0, H - rowsDone * cell - s.h);
+      rowsDone += (p - 1) / 2;
+      half = true;
+    } else {
+      const x = p === 1 ? cell : 0;
+      svg += `<g transform="translate(${R(x)} ${R(H - rowsDone * cell - s.h)}) rotate(180 ${R(s.w / 2)} ${R(s.h / 2)})">${s.svg}</g>`;
+      rowsDone += (p + 1) / 2;
+      half = false;
+    }
+  }
+  return sp(2 * cell, H, svg);
+}
+
 // ---------------------------------------------------------------- flat shapes
 // For "is it a triangle?" games. Some are deliberately NOT what they nearly look like.
 const SHAPES = {

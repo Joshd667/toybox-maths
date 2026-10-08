@@ -1,7 +1,7 @@
 // Building: copying models, design challenges and fitting shapes together.
 import {
-  A, lv, times, list, has, plural, prop, numQ,
-  row, column, model, build, block, car, animal, engine, frame, text, sign, qbox, trackPath, layer, sp, at, shade, PAL,
+  A, lv, times, list, has, plural, prop, numQ, trackList, mirror, sized, rabbitScene,
+  row, column, model, build, block, car, animal, engine, frame, text, sign, qbox, trackPlan, numicon, numiconStack, arrow, layer, sp, at, shade, PAL,
   BLOCK_SIZE, BLOCK_NAME, BRICK_COLOURS, MORE_COLOURS, FARM,
 } from './kit.js';
 
@@ -99,6 +99,28 @@ function fence(inner) {
   return sp(w, h, svg + at(inner, (w - inner.w) / 2, (h - inner.h) / 2));
 }
 
+// ---------------------------------------------------------------- train track
+// Layouts for trackPlan: S long straight, s short straight, L and R curves. Eight curves make a ring,
+// so every loop has eight more curves one way than the other. No points, tunnels or bridges: the owner has none.
+const TRACKS = {
+  1: ['SS', 'SL', 'LL', 'SSL', 'SLS', 'sS', 'SLL'],
+  2: ['SLR', 'SLLS', 'SSLL', 'LSR', 'SLRS', 'sLLS', 'SLLRR', 'SLsRS'],
+  3: ['LLLLLLLL', 'SLLLLSLLLL', 'SSLLLLSSLLLL', 'SLLSLLSLLSLL', 'sLLLLsLLLL'],
+};
+// Tracks to leave a gap in. Open ones have a piece at each end that always stays.
+const GAPS = {
+  1: ['SSS', 'SLS', 'SSL', 'LLS', 'SsS'],
+  2: ['SLRS', 'SsLL', 'SLLsS', 'SSLLS', 'LsRS'],
+  3: ['LLLLLLLL', 'SLLLLSLLLL', 'sLLLLsLLLL', 'SSLLLLSSLLLL', 'SLLSLLSLLSLL'],
+};
+// Numicon shapes that together cover a bigger one. Step 1 stacks without turning; step 2 has two odd shapes,
+// so one must turn round; step 3 uses three.
+const FITS = {
+  1: [[2, 2], [2, 4], [4, 4], [2, 6], [2, 1], [2, 3], [4, 3], [4, 1]],
+  2: [[1, 3], [3, 3], [3, 5], [1, 5], [5, 5], [3, 7], [1, 7]],
+  3: [[1, 2, 3], [2, 3, 3], [2, 3, 5], [1, 3, 4], [1, 4, 5], [1, 3, 6], [2, 2, 4]],
+};
+
 export default [
   A({
     id: 'copy-duplo',
@@ -109,6 +131,7 @@ export default [
     toys: ['duplo'],
     minutes: 5,
     age: 3,
+    upTo: 5,
     research: ['verdine2014', 'ferrara2011'],
     why: 'This is the task from the research: 3-year-olds who were better at copying a brick model also did better at early maths. It is a link, not proof that one causes the other.',
     make(r, level) {
@@ -137,6 +160,7 @@ export default [
     toys: ['wooden'],
     minutes: 5,
     age: 3,
+    upTo: 5,
     research: ['verdine2014', 'casey2008', 'devmatters'],
     why: 'Choosing the right block for each job, like a flat one to bridge a gap or a triangle for a roof, is on the 3-and-4-year-old list.',
     make(r, level) {
@@ -164,6 +188,7 @@ export default [
     toys: ['wooden', 'duplo'],
     minutes: 6,
     age: 3,
+    upTo: 5,
     research: ['casey2008', 'ferrara2011', 'devmatters'],
     why: 'Building to a goal inside a little story gave the best spatial results in a block-building study, and brings out far more position words than free play.',
     make(r, level, ctx) {
@@ -201,6 +226,7 @@ export default [
     toys: ['duplo', 'wooden', 'cubes'],
     minutes: 5,
     age: 2.5,
+    upTo: 4,
     research: ['devmatters', 'ncetm'],
     why: 'Building to match a height is measuring before rulers: he has to compare, adjust, and decide when it is "the same".',
     make(r, level, ctx) {
@@ -234,6 +260,7 @@ export default [
     toys: ['animals'],
     minutes: 6,
     age: 3,
+    upTo: 5,
     research: ['casey2008', 'ferrara2011'],
     why: 'Fencing something in is one of the classic block-building steps: he has to close every gap and judge how much space is needed.',
     make(r, level) {
@@ -256,6 +283,177 @@ export default [
         easier: 'Build three sides and let him finish the fourth.',
         harder: lv(level, 'Add a gate, or split the field in two.', 'Add a gate, or split the field in two.', 'Ask for both: a gate, and a fence down the middle.'),
         words: ['inside', 'outside', 'all the way round', 'gap', 'corner', 'enough room'],
+      };
+    },
+  }),
+
+  A({
+    id: 'copy-track',
+    title: 'Copy my track',
+    strand: 'building',
+    skill: 'Copying a model',
+    needs: [],
+    toys: ['brio'],
+    minutes: 6,
+    age: 3,
+    upTo: 5,
+    research: ['verdine2014', 'deloache1991', 'bower2020'],
+    why: 'Copying a layout from a picture is the same kind of task as copying a brick model, which is linked to early maths at 3. Nobody has tested it with train track, so treat it as a good puzzle and no more.',
+    make(r, level) {
+      let track = r.pick(TRACKS[level]);
+      if (r.bool()) track = mirror(track);
+      const loop = level === 3;
+      const curves = [...track].filter((k) => k === 'L' || k === 'R').length;
+      return {
+        setup: [`Put out ${trackList(track)}, plus a few spare pieces.`, 'Show him the picture and let him work from it.'],
+        scenes: [{ caption: 'Seen from above', sprite: trackPlan(track) }],
+        ask: 'Can you build a track just like this one?',
+        answer: { type: 'do' },
+        ...(loop ? { reveal: { caption: 'Run a train all the way round to check it joins up.' } } : {}),
+        more: [numQ(r, 'How many pieces did you use?', track.length, undefined, { min: 1 }), numQ(r, 'How many of them are bendy?', curves)],
+        look: ['Does he turn a curve over when it bends the wrong way?', 'Does he check back against the picture after each piece?', loop ? 'A loop only closes if every piece matches. Let him find that out before you help.' : 'Which is harder for him: how many pieces, or which way it bends?'],
+        easier: lv(level, 'Two pieces: one straight and one curve.', 'Build the first two pieces for him.', 'Build half the loop and let him finish it.'),
+        harder: lv(level, 'He adds one more piece and you copy his track.', 'Show the picture for ten seconds, then hide it.', 'Turn the phone so the picture is on its side.'),
+        words: ['straight', 'curve', 'bend', 'the same', 'turn it over', 'all the way round'],
+      };
+    },
+  }),
+
+  A({
+    id: 'track-gap',
+    title: 'Which piece fits?',
+    strand: 'building',
+    skill: 'Building challenges',
+    needs: [],
+    toys: ['brio'],
+    minutes: 5,
+    age: 3,
+    upTo: 5,
+    research: ['bower2020', 'levine2012', 'verdine2014'],
+    why: 'Choosing the piece for a gap means judging length and bend before trying it. In one trial, 3-year-olds who practised fitting flat shapes to a picture got better at fitting them. Track itself has not been tested.',
+    make(r, level) {
+      let track = r.pick(GAPS[level]);
+      if (r.bool()) track = mirror(track);
+      // which piece to leave out: never an end piece of an open track, so the gap has two sides to join
+      const loop = level === 3;
+      const i = loop ? r.int(0, track.length - 1) : r.int(1, track.length - 2);
+      const key = { S: 'S', s: 's', L: 'C', R: 'C' }[track[i]];
+      const name = { S: 'long straight', s: 'short straight', C: 'curve' };
+      const keys = level === 1 ? (key === 's' ? ['s', 'S'] : ['S', 'C']) : ['S', 's', 'C'];
+      const rest = track.slice(0, i) + track.slice(i + 1);
+      return {
+        setup: [`Build this track with ${trackList(rest)}, leaving a gap where the "?" is.`, `Put ${list(keys.map((k) => `a ${name[k]}`))} beside it.`],
+        scenes: [{ caption: 'Seen from above', sprite: trackPlan(track, { gap: i }) }],
+        ask: 'Which piece fits in the gap?',
+        answer: { type: 'pick', options: keys.map((k) => ({ key: k, sprite: trackPlan(k === 'C' ? 'L' : k) })), correct: key },
+        reveal: { caption: `The ${name[key]}. Let him try the others too and see why they do not fit.`, sprite: trackPlan(track) },
+        more: [{ ...numQ(r, 'How many pieces are in the track now?', track.length, undefined, { min: 1 }), scenes: [{ caption: 'Seen from above', sprite: trackPlan(track) }] }, { ask: 'Shut your eyes while I take one piece out. Which one is missing now?', scenes: [], answer: { type: 'do' } }],
+        look: ['Does he choose by looking, or try each piece in turn? Both are fine; looking first comes later.', 'Does he turn the curve over when it bends the wrong way?'],
+        easier: lv(level, 'Take out a piece from the end of the track, not the middle.', 'Offer two pieces only: the right one and a very different one.', 'Use an open track, not a loop.'),
+        harder: lv(level, 'Add the short straight as a third choice.', 'Take out two pieces next to each other.', 'Take out two pieces from different places.'),
+        words: ['fits', 'gap', 'too long', 'too short', 'straight', 'curve'],
+      };
+    },
+  }),
+
+  A({
+    id: 'rabbit-copy',
+    title: 'Where is the rabbit?',
+    strand: 'building',
+    skill: 'Copying a model',
+    needs: [],
+    toys: ['bunny'],
+    minutes: 3,
+    age: 2.5,
+    upTo: 4,
+    research: ['deloache1991', 'verdine2014', 'pruden2011'],
+    why: 'Building what a picture shows, then saying where the rabbit is, joins copying a model with position words. Children of 2½ can already use a picture as a guide.',
+    make(r, level) {
+      const s = rabbitScene(r, level);
+      const where = s.rel
+        ? { ask: 'Where is the rabbit: in, on or behind?', answer: { type: 'pick', options: [{ key: 'in', label: 'In' }, { key: 'on', label: 'On' }, { key: 'behind', label: 'Behind' }], correct: s.rel }, reveal: { caption: `The rabbit is ${s.words}.` } }
+        : { ask: 'Tell me where the rabbit is.', answer: { type: 'do' }, reveal: { caption: `Listen for: "${s.words}".` } };
+      return {
+        setup: [`You need the rabbit and ${s.need}.`, 'Show him the picture and let him build it.'],
+        scenes: [{ caption: 'Seen from the front', sprite: s.sprite }],
+        ask: 'Can you make yours look like this?',
+        answer: { type: 'do' },
+        more: [where, { ask: 'Now you hide the rabbit somewhere new. Tell me where it is.', scenes: [], answer: { type: 'open' } }],
+        look: ['Does he look back at the picture as he builds?', 'Say his answer back in a full sentence: "Yes, the rabbit is inside the box."', 'Ask what the rabbit can see from there.'],
+        easier: lv(level, 'Build it yourself and let him copy your blocks, not the picture.', 'Use one block only.', 'Build the blocks for him and let him place the rabbit.'),
+        harder: lv(level, 'Add a second block.', 'Use all three blocks.', 'Show the picture for five seconds, then hide it.'),
+        words: ['in', 'on top of', 'behind', 'inside', 'through', 'hidden'],
+      };
+    },
+  }),
+
+  A({
+    id: 'will-it-fit',
+    title: 'Will it fit under?',
+    strand: 'building',
+    skill: 'Building challenges',
+    needs: ['Blocks or bricks for a bridge'],
+    toys: ['cars', 'animals'],
+    minutes: 5,
+    age: 2.5,
+    upTo: 4,
+    research: ['serasmith1987', 'ferrara2011', 'devmatters'],
+    why: 'Guessing whether a toy will fit and then testing it gives "big", "tall" and "too big" something to be checked against. Even 2-year-olds use "big" as a comparison between the things in front of them.',
+    make(r, level, ctx) {
+      const n = lv(level, 2, 3, 3);
+      const t = sized(r, ctx, n);
+      const bridge = build([{ shape: 'pillar', colour: 'blue', x: 0, y: 0 }, { shape: 'pillar', colour: 'blue', x: 2, y: 0 }, { shape: 'plank', colour: 'yellow', x: 0, y: 2 }]);
+      const pic = row([bridge, ...r.shuffle(t.items).map((i) => i.sprite)], { gap: 12 });
+      const first = lv(
+        level,
+        { ask: 'Which one will fit under the bridge? Have a guess, then try.', answer: { type: 'do' }, reveal: { caption: 'Whatever happens, say it: "too tall", "it fits", "only just".' } },
+        { ask: 'Which ones will fit under the bridge, and which will not? Guess first, then try.', answer: { type: 'do' }, reveal: { caption: 'Line them up as "fits" and "does not fit".' } },
+        { ask: 'How many blocks tall must the bridge be for the biggest one? Guess, then build it.', answer: { type: 'open' }, reveal: { caption: 'Count the blocks in one leg together.' } }
+      );
+      return {
+        setup: [`Pick ${n} ${t.many} that are clearly different sizes. The picture is only an example.`, lv(level, 'Build a low bridge that the smallest one fits under.', 'Build a bridge that only the smallest one fits under.', 'Put out blocks for a bridge, but do not build it.')],
+        scenes: [{ caption: 'Yours will look different', sprite: pic }],
+        ...first,
+        more: [
+          { ask: lv(level, 'Can you make the bridge taller, so the big one fits too?', 'Can you make it just tall enough for the middle one?', 'Now make it wide enough for two of them side by side.'), answer: { type: 'do' } },
+          { ask: 'Find something else that fits under. And something that does not.', scenes: [], answer: { type: 'open' } },
+        ],
+        look: ['Does he guess before he tries? Either guess is fine. The checking is the point.', 'Does he change the bridge, or push harder?', 'A toy duck can be bigger than a toy elephant. Go by the toys in front of him.'],
+        easier: lv(level, 'Use one very small toy and one very big one.', 'Use two toys.', 'Build the bridge for him and let him test each toy.'),
+        harder: lv(level, 'Add a third toy, in between the other two.', 'Ask how many blocks tall the bridge would need to be for the biggest.', 'Ask for a bridge the middle one fits under but the biggest does not.'),
+        words: ['fits', 'too big', 'too tall', 'taller', 'wider', 'just right'],
+      };
+    },
+  }),
+
+  A({
+    id: 'numicon-fit',
+    title: 'Fit them together',
+    strand: 'building',
+    skill: 'Building challenges',
+    needs: [],
+    toys: ['numicon'],
+    minutes: 4,
+    age: 3,
+    upTo: 5,
+    research: ['bower2020', 'carbonneau2013', 'eef2020'],
+    why: 'Covering a big shape with smaller ones means turning them in his hands until they fit. Three-year-olds who practised fitting flat shapes to a picture got better at fitting them. Numicon itself has not been tested.',
+    make(r, level) {
+      const parts = r.pick(FITS[level]);
+      const total = parts.reduce((a, b) => a + b, 0);
+      const names = parts.every((p) => p === parts[0]) ? `${parts.length === 2 ? 'two' : 'three'} ${parts[0]} shapes` : `the ${list(parts.map(String))} shapes`;
+      const top = [...parts.filter((p) => p % 2 === 0), ...parts.filter((p) => p % 2 === 1)].pop(); // the one that ends up on top in the answer picture
+      return {
+        setup: [`Put out the ${total} shape and ${names}.`],
+        scenes: [{ sprite: row([numicon(total, 17), arrow(22), row(parts.map((p) => numicon(p, 17)), { gap: 8 })], { gap: 12, align: 'middle' }) }],
+        ask: `Can you cover the ${total} shape with the other ${parts.length === 2 ? 'two' : 'three'}, so that every hole is covered?`,
+        answer: { type: 'do' },
+        reveal: { caption: level === 1 ? 'They sit one above the other.' : 'One of them has to turn right round to lock in.', sprite: numiconStack(parts, 17) },
+        more: [numQ(r, `How many holes does the ${total} shape have?`, total, undefined, { min: 1 }), numQ(r, `Lift the ${top} shape off. How many holes are showing now?`, top, undefined, { min: 1 })],
+        look: ['Does he turn a shape round when it will not fit, or reach for a different one?', 'Laying them on top, or pressing them side by side on the baseboard, both work.'],
+        easier: lv(level, 'Use two 2 shapes on the 4 shape.', 'Start with shapes that stack without turning, like the 2 and the 4.', 'Use two shapes, not three.'),
+        harder: lv(level, 'Use two shapes with a bump on, like the 3 and the 5.', 'Use three shapes.', 'Ask him to find a different set of shapes that covers the same one.'),
+        words: ['cover', 'fits', 'turn it round', 'together', 'the same as'],
       };
     },
   }),

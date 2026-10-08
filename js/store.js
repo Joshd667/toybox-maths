@@ -96,7 +96,8 @@ export function setBorn(born) {
 }
 
 // ---------------------------------------------------------------- age
-// Each activity has an `age`: the youngest age (in years) its Easy version is aimed at. See CLAUDE.md.
+// Each activity has an `age`: the youngest age (in years) its Easy version is aimed at, and `upTo`: the age its
+// hardest version is aimed at. See CLAUDE.md.
 // A child's age is rounded to the nearest half year, so a child of 2 years 10 months counts as 3.
 export function ageOf(c = child(), now = new Date()) {
   const m = /^(\d{4})-(\d{2})$/.exec(c?.born || '');
@@ -143,13 +144,20 @@ export function rate(id, rating, mode, stars = 0, asked = 0) {
 }
 
 // The difficulty to offer when an activity is opened. `modes` is what it supports, easiest first
-// (e.g. ['1', '2', '3', 'mix', 'ramp']). First time: the easiest. After that: the same as last time,
+// (e.g. ['1', '2', '3', 'mix', 'ramp']). First time: chosen from the child's age and the activity's age range
+// (the easiest if no month of birth was given). After that: the same as last time,
 // one harder if that was "too easy", one easier if it was "too tricky".
 export function suggest(a, modes) {
   const last = actState(a.id).last;
-  if (!last) return modes[0];
-  const was = String(last.mode ?? last.level);
   const fixed = modes.filter((m) => m !== 'mix' && m !== 'ramp');
+  if (!last) {
+    // Never played: go by age if we know it. At or below the activity's first age: easiest. At or above its last: hardest.
+    const age = ageOf();
+    if (age === null || fixed.length < 2 || age <= a.age) return modes[0];
+    if (age >= a.upTo) return fixed[fixed.length - 1];
+    return fixed[Math.floor(((age - a.age) / (a.upTo - a.age)) * (fixed.length - 1))]; // rounds down: start gently
+  }
+  const was = String(last.mode ?? last.level);
   if (!fixed.includes(was)) return modes.includes(was) ? was : modes[0];
   const i = fixed.indexOf(was) + (last.rating === 'easy' ? 1 : last.rating === 'hard' ? -1 : 0);
   return fixed[Math.max(0, Math.min(fixed.length - 1, i))];
