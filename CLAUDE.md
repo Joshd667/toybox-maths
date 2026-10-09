@@ -3,8 +3,6 @@
 A phone web app (PWA) of early maths activities for one family: a parent and young children, the eldest about three.
 `PLAN.md` says what was reviewed in October 2026, what was built from it, and what is still to do (activities for 1- to 2-year-olds).
 Plain HTML, CSS and JavaScript modules. **No framework, no build step, no dependencies.** Keep it that way.
-The one exception is the `ai/` folder: three programs and one model, copied in unchanged, that are fetched only if the adult
-switches on search by meaning or the chat helper (see "Asking in a sentence" below and `ai/README.md`).
 
 Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` publishes.
 
@@ -23,17 +21,12 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `js/brand.js` | The toy box logo: the home-screen icon and the small logo beside the app's name. |
 | `js/rng.js` | Seeded random numbers, so every variation can be reproduced and tested. |
 | `js/research.js` | Every source cited, with what it found and what it does not show. |
-| `js/ask.js` | Search. Looks up plain words, reads a sentence for time, toys, age and what to leave out, and builds the list. No DOM, so the validator tests it. |
-| `js/meaning.js` | Turns a sentence into 384 numbers with the small model in `ai/`, for matching by meaning. Used on the phone and by `tools/embed.mjs`. |
-| `js/vectors.js` | The saved numbers for every activity. **Made by `tools/embed.mjs`; never edit by hand.** |
-| `js/chat.js` | The optional chat helper: a small language model that may only choose among activities already found. |
-| `ai/` | The model and the programs that run it. Big files, fetched only when switched on. `ai/README.md` says where each came from. |
+| `js/ask.js` | Search. Looks up plain words, reads a sentence for time, toys, age and what to leave out, and builds the list. Plain code, no AI model. No DOM, so the validator tests it. |
 | `js/activities/index.js` | List of strands, toys, and all activities. |
 | `js/activities/kit.js` | One import for activity files: all of `draw.js` plus small helpers. |
 | `js/activities/<strand>.js` | The activities, one file per strand. **This is where most additions go.** |
 | `sw.js` | Offline support. Has a list of every file. |
 | `tools/validate.mjs` | The test. Run before every commit. |
-| `tools/embed.mjs` | Makes `js/vectors.js`. **Run it after adding or rewording an activity**, or the validator fails. |
 | `tools/sheet.mjs` | Review sheets: one page per activity with two variations at each difficulty. Use it to check words, pictures and answers agree. |
 | `tools/make-icons.mjs` | Rebuilds the files in `icons/` from `js/brand.js` (needs Playwright). Run it after changing the logo. |
 
@@ -71,7 +64,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
    - `words`: maths words to use out loud
 4. Use `r` (never `Math.random`) for anything random: `r.int(a, b)`, `r.pick(list)`, `r.sample(list, k)`, `r.shuffle(list)`, `r.bool(p)`.
    Use `lv(level, a, b, c)` to choose by difficulty. Make `easier` and `harder` fit the level too: do not suggest what that level already does. Use `pickToy(r, ctx, [...])` to draw a toy the family has out.
-5. Run `node tools/embed.mjs` (it rewrites `js/vectors.js` for the meaning search), then `node tools/validate.mjs`. It must print `All good`.
+5. Run `node tools/validate.mjs`. It must print `All good`.
 6. Look at it. `node tools/sheet.mjs <folder> <id>` writes a review page; also serve the folder (`python3 -m http.server`), open `#/play/<id>` at phone width and play a turn on Ramp up.
 
 A new file anywhere under `js/`, `css/`, `icons/` or `fonts/` must be added to `FILES` in `sw.js` (the validator checks).
@@ -245,34 +238,23 @@ What was typed is kept while the app is open, so closing an activity returns to 
 The owner asked for a way to say what he wants in his own words ("quick, I have Duplo and trains, he's 4, didn't like the
 pattern one, loves animals") and get a menu of activities back. It is the same search box. There is no chat screen and no new tab.
 
-**The rule that must not be broken: nothing here writes words about an activity or its research.** The software only chooses and
-orders activities. Every word the adult reads is the activity's own text, so the research rules above still hold. Research for
-this (October 2026, in `PLAN.md`) found small on-device models add claims of their own too often to be let loose on the research.
+It is plain code in `js/ask.js` (`understand()` and `menu()`): no AI model, no download, nothing sent anywhere. It only chooses
+and orders activities; every word shown is the activity's own text.
 
-Three layers, each optional on top of the one before:
+- It reads the time ("quick", "5 minutes"), the age ("he's 4", "nearly 3", a number on its own), toys that are out ("I have…"),
+  toys, skills and named activities to leave out ("didn't like…", "bored of…", "no…"), and what he likes ("loves…").
+- What was understood is shown as labels under the box; a tap strikes one out.
+- One follow-up question ("Which toys are out?", "How long have you got?") has its answers as buttons. A tap adds the words to
+  the box, so the box always holds everything that has been said.
+- A sentence is anything with a time, an age, or a cue such as "didn't like". Bare words ("duplo", "taller") stay with the plain search.
+- Ages follow the "For later" rule: nothing is hidden.
+- `SENTENCES` in `tools/validate.mjs` holds sentences that must keep working. Add to it when fixing a misreading.
+- It cannot know things the activities do not say, such as which are calm.
 
-1. **Rules, always on, no download** (`understand()` and `menu()` in `js/ask.js`). Reads the time ("quick", "5 minutes"), the age
-   ("he's 4", "nearly 3", a number on its own), toys that are out ("I have…"), toys and skills and named activities to leave out
-   ("didn't like…", "bored of…", "no…"), and what he likes ("loves…"). What was understood is shown as labels under the box;
-   a tap strikes one out. One follow-up question ("Which toys are out?", "How long have you got?") has its answers as buttons,
-   and a tap adds the words to the box, so the box always holds everything that has been said.
-   A sentence is anything with a time, an age, or a cue such as "didn't like"; bare words ("duplo", "taller") stay with the plain search.
-   Ages follow the "For later" rule: nothing is hidden. `SENTENCES` in `tools/validate.mjs` holds sentences that must keep working; add to it when fixing a misreading.
-2. **Matching by meaning, off until switched on** (Settings, "Search by sentence", or the offer under a search). `js/meaning.js` runs
-   all-MiniLM-L6-v2 (23 MB) in WebAssembly, on any phone, and compares what was typed with `js/vectors.js`. Everything comes from
-   this site; nothing typed leaves the phone. `NEAR` in `js/ask.js` is how alike two meanings must be to count: below it, nothing
-   is shown, which is right ("dinosaurs" should find nothing). It cannot know things the activities do not say, such as which are calm.
-3. **The chat helper, off until switched on, marked Trial** (`js/chat.js`). Gemma 3 1B (about 600 MB, from Hugging Face) run by WebLLM
-   on the phone's graphics chip. After a sentence search, "Choose for me" hands it the sentence and up to twelve activities already
-   found. Its answer is locked by a schema to keys for those activities plus one of three set follow-up questions; `readAnswer()`
-   drops anything else. Its choices show as "Chosen for you". It is hidden on iPhones and iPads (they close the page for a model
-   this size) and where there is no WebGPU. **As of October 2026 it has not been run on a real phone**: see `PLAN.md`.
-
-- Do not give the chat helper a text box to answer in, a "why" to write, or the research entries to summarise.
-- The files in `ai/` are not in `FILES` in `sw.js` (they would make every phone download 45 MB). `sw.js` keeps them in their own
-  cache, `toybox-ai-1`, saved-copy-first, and does not clear it on an update. That is the one place saved files are served first:
-  they never change. If one is ever replaced, put it at a new path or bump that cache name.
-- If the model file is replaced, or `docText()` in `js/ask.js` changes, run `node tools/embed.mjs`. The validator checks both.
+**Do not add an AI model back without asking.** Two were built and removed in October 2026 at the owner's request: matching by
+meaning with a small embedding model, and a chat helper (Gemma 3 1B through WebLLM). The first changed few results at this size
+and the second was never run on a real phone. `PLAN.md` has the research and the reasons. If one is ever tried again, it must
+only choose activities and never write words about them or the research.
 
 ## Publishing
 

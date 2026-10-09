@@ -17,8 +17,7 @@ import * as store from './store.js';
 import { celebrate, finale, hush } from './reward.js';
 import { reword } from './wording.js';
 import { logo } from './brand.js';
-import { menu, understand, askText, notText, plain } from './ask.js';
-import { loadEmbedder, unpack } from './meaning.js';
+import { menu, plain } from './ask.js';
 
 const { render, numeral } = D;
 const view = document.getElementById('view');
@@ -151,194 +150,45 @@ const groupsHtml = (groups) =>
 // The box is on the home screen. Typing swaps the skills or toys below it for matching activities; clearing it brings them back.
 // js/ask.js does the choosing: plain words are looked up as before, and a sentence ("quick, I have Duplo, he's 4,
 // didn't like the pattern one") is read for the time, toys, age, and what to leave out. This part only draws the result.
-// Two things can be switched on in Settings to help: "Understand sentences" (smart) and the "Chat helper" (helper).
-// Neither writes any words: the rows are always the activities' own text.
+// It is all plain code: no AI model, nothing to download.
 let searchQ = '';
-let dropped = new Set(); // chips under the box that the adult has tapped away
-// state is 'off', 'loading', 'ready' or 'failed'. key says which typing qv and nv belong to.
-const smart = { state: 'off', progress: 0, embed: null, vectors: null, key: null, qv: null, nv: null };
-// Is each download saved on this phone? null until looked up (see checkSaved).
-const saved = { meaning: null, chat: null };
-const helper = { state: 'off', progress: 0, busy: false, key: null, answer: null };
-const meaningKey = (p) => askText(p) + '|' + notText(p);
+let dropped = new Set(); // labels under the box that the adult has tapped away
 const managed = (a) => ['right', 'easy'].includes(store.actState(a.id).last?.rating);
-
-function menuNow() {
-  const fresh = smart.state === 'ready' && smart.key === meaningKey(understand(searchQ));
-  return menu(searchQ, { drop: dropped, age: store.ageOf(), playable: store.playable, managed, weight: store.weight, vectors: fresh ? smart.vectors : null, qv: fresh ? smart.qv : null, nv: fresh ? smart.nv : null });
-}
+const menuNow = () => menu(searchQ, { drop: dropped, age: store.ageOf(), playable: store.playable, managed, weight: store.weight });
 // Redraw what is under the box, if the search is on the screen.
 function redrawSearch() {
   const body = document.getElementById('home-body');
   if (body && plain(searchQ)) body.innerHTML = homeBody();
-  const status = document.getElementById('smart-status');
-  if (status) status.innerHTML = smartStatus();
-  const hs = document.getElementById('helper-status');
-  if (hs) hs.innerHTML = helperStatus();
-}
-// Fetch the meaning model (about 30 MB, once) and get it ready.
-function startSmart() {
-  if (smart.state === 'loading' || smart.state === 'ready') return;
-  smart.state = 'loading';
-  import('./vectors.js')
-    .then(async (v) => {
-      smart.vectors = Object.fromEntries(Object.entries(v.VECTORS).map(([id, [, text]]) => [id, unpack(text)]));
-      smart.embed = await loadEmbedder((f) => {
-        smart.progress = f;
-        const el = document.getElementById('smart-status');
-        if (el) el.innerHTML = smartStatus();
-      });
-      smart.state = 'ready';
-      think();
-    })
-    .catch(() => (smart.state = 'failed'))
-    .finally(() => {
-      redrawSearch();
-      checkSaved();
-    });
-}
-// Turn what is typed into numbers, a moment after the typing stops.
-let thinkTimer = 0;
-function think() {
-  clearTimeout(thinkTimer);
-  if (smart.state !== 'ready' || !plain(searchQ)) return;
-  thinkTimer = setTimeout(async () => {
-    const p = understand(searchQ);
-    const key = meaningKey(p);
-    if (key === smart.key) return;
-    const qv = askText(p) ? await smart.embed(askText(p)) : null;
-    const nv = notText(p) ? await smart.embed(notText(p)) : null;
-    if (meaningKey(understand(searchQ)) !== key) return; // more has been typed since
-    Object.assign(smart, { key, qv, nv });
-    redrawSearch();
-  }, 250);
-}
-// Look in the phone's storage for the two downloads, so Settings can say plainly whether each one is there.
-async function checkSaved() {
-  try {
-    const has = async (cache, part) => (await caches.has(cache)) && (await (await caches.open(cache)).keys()).some((r) => r.url.includes(part));
-    saved.meaning = await has('toybox-ai-1', 'minilm/model.onnx');
-    saved.chat = await has('webllm/model', 'gemma3-1b');
-  } catch {
-    saved.meaning = saved.chat = null; // storage cannot be read here
-  }
-  for (const [id, text] of [['smart-status', smartStatus], ['helper-status', helperStatus]]) {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = text();
-  }
-}
-const TICK = '<b class="done">✓ Downloaded.</b>';
-// The line under each switch in Settings. It always says whether the download is on the phone.
-function smartStatus() {
-  if (!store.settings().meaning) return saved.meaning ? 'Switched off. The download is still on this phone, so switching it on again is instant.' : 'Not downloaded.';
-  if (smart.state === 'loading') return smart.progress > 0 && smart.progress < 1 ? `Downloading: ${Math.round(smart.progress * 100)}%` : 'Getting it ready…';
-  if (smart.state === 'failed') return 'Could not download it. Check the connection, then switch it off and on again.';
-  if (smart.state === 'ready') return `${TICK} Working now, and with no connection too.`;
-  return saved.meaning ? `${TICK} It starts when you search.` : 'Not downloaded yet. It downloads when you next search.';
-}
-
-// ----- the chat helper
-const chatMod = () => import('./chat.js');
-async function startHelper() {
-  if (helper.state === 'loading' || helper.state === 'ready') return;
-  helper.state = 'loading';
-  helper.progress = 0;
-  redrawSearch();
-  try {
-    const mod = await chatMod();
-    await mod.loadChat((f) => {
-      helper.progress = f;
-      const hs = document.getElementById('helper-status');
-      if (hs) hs.innerHTML = helperStatus();
-    });
-    helper.state = 'ready';
-  } catch {
-    helper.state = 'failed';
-  }
-  redrawSearch();
-  checkSaved();
-}
-function helperStatus() {
-  if (!chatOk().ok) return esc(chatOk().why);
-  if (!store.settings().chat) return saved.chat ? 'Switched off. Removing the download…' : 'Not downloaded.';
-  if (helper.state === 'loading') return `${saved.chat ? 'Starting it' : 'Downloading'}: ${Math.round(helper.progress * 100)}%. Keep this page open.`;
-  if (helper.state === 'failed') return 'It did not start on this phone. Search carries on without it. Switch it off to free the space.';
-  if (helper.state === 'ready') return `${TICK} Running. Type a sentence in the search box, then tap "Choose for me".`;
-  return saved.chat ? `${TICK} It starts when you tap "Choose for me" after a sentence search.` : 'Not downloaded yet. Switch it off and on again, on wifi, to fetch it.';
-}
-// Hand the model what was typed and the activities already found; it says which to put first.
-async function askHelper() {
-  if (helper.busy) return;
-  const asked = searchQ.trim();
-  const cands = menuNow()
-    .groups.filter((g) => !g.note)
-    .flatMap((g) => g.acts)
-    .slice(0, 12)
-    .map((r) => ({ a: r.a, strand: strandOf(r.a).name, toys: r.a.toys.map(toyName) }));
-  if (cands.length < 2) return;
-  helper.busy = true;
-  redrawSearch();
-  try {
-    if (helper.state !== 'ready') await startHelper();
-    if (helper.state === 'ready') {
-      const answer = await (await chatMod()).choose(asked, cands);
-      Object.assign(helper, { key: asked, answer });
-    }
-  } catch {
-    helper.state = 'failed';
-  }
-  helper.busy = false;
-  redrawSearch();
 }
 
 // One more thing worth asking, with the answers as buttons. A tap adds the words to the box, so the box
-// always shows everything that has been said. `want` is the chat helper's choice of question, if it made one.
-function followUp(p, want) {
-  const open = { toys: !p.have.length && !p.noToys, time: !p.time, skill: !p.yes.length };
-  const kind = want && open[want] ? want : open.toys ? 'toys' : open.time ? 'time' : null;
+// always shows everything that has been said.
+function followUp(p) {
+  const kind = !p.have.length && !p.noToys ? 'toys' : !p.time ? 'time' : null;
   if (!kind) return '';
   const [ask, answers] = {
     toys: ['Which toys are out?', [...TOYS.filter((t) => owned().includes(t.id)).map((t) => [t.name, `I have ${t.name}`]), ['No toys', 'no toys']]],
     time: ['How long have you got?', [['A few minutes', 'quick'], ['About 5 minutes', '5 minutes'], ['Plenty of time', 'plenty of time']]],
-    skill: ['Which skill?', STRANDS.map((s) => [s.name, s.name.toLowerCase()])],
   }[kind];
   return `<div class="follow"><p>${ask}</p><div class="chips" role="group" aria-label="${ask}">${answers.map(([label, text]) => `<button class="chip" data-act="say" data-v="${esc(text)}">${esc(label)}</button>`).join('')}</div></div>`;
 }
 
 function searchResults() {
   const m = menuNow();
-  const s = store.settings();
   const sentence = m.mode === 'sentence';
   const heard = m.chips.length
     ? `<div class="heard"><span class="heard-label">Understood</span><div class="chips" role="group" aria-label="What was understood. Tap one to leave it out.">${m.chips
         .map((c) => `<button class="chip heard-chip${c.no ? ' no' : ''}" data-act="heard" data-v="${c.key}" aria-pressed="${!c.off}">${esc(c.label)}${c.off ? '' : icon.close}</button>`)
         .join('')}</div></div>`
     : '';
-  // The chat helper's choices go first, in a group of their own, and come out of the groups below.
-  const picked = helper.answer && helper.key === searchQ.trim() ? helper.answer.picks.filter((id) => m.groups.some((g) => g.acts.some((r) => r.a.id === id))) : [];
-  const all = m.groups.flatMap((g) => g.acts);
   const rowOf = (r) => actRow(r.a, r.toy, 'all');
   const age = m.parse && m.parse.age !== null ? m.parse.age : store.ageOf();
   const NOTES = { off: OFF_NOTE, later: `Aimed at children older than about ${ageWord(age ?? 0)}. Still fine to try.` };
-  const groups = [];
-  if (picked.length) groups.push(['Chosen for you', picked.map((id) => rowOf(all.find((r) => r.a.id === id)))]);
-  for (const g of m.groups) {
-    const rows = g.acts.filter((r) => !picked.includes(r.a.id));
-    if (rows.length) groups.push([g.name || (picked.length ? 'Also fits' : ''), rows.map(rowOf), NOTES[g.note]]);
-  }
-  // Offers and progress, under the list.
-  let foot = '';
-  if (!s.meaning && m.meaning && (sentence || !m.count))
-    foot = `<div class="smart"><p><b>Match by meaning too?</b> Then "he loves hiding games" finds more than the exact words. One download of about 30 MB, kept on this phone. Nothing you type leaves the phone.</p><button class="btn" data-act="set" data-key="meaning" data-v="1">Turn it on</button></div>`;
-  else if (s.meaning) foot = `<p class="small-note">${smart.state === 'ready' ? 'Matching by meaning is on.' : smart.state === 'failed' ? 'Matching by meaning could not be downloaded.' : 'Matching by meaning: getting ready…'}</p>`;
-  const canChoose = s.chat && sentence && all.length > 1 && helper.state !== 'failed';
-  const choose = canChoose
-    ? `<button class="btn choose" data-act="helper"${helper.busy ? ' disabled' : ''}>${helper.busy ? (helper.state === 'loading' ? `Starting the helper: ${Math.round(helper.progress * 100)}%` : 'Choosing…') : picked.length ? 'Choose again' : 'Choose for me'}</button>`
-    : '';
+  const groups = m.groups.map((g) => [g.name, g.acts.map(rowOf), NOTES[g.note]]);
   if (!m.count)
-    return `${heard}<div class="empty"><p><b>Nothing matches “${esc(searchQ.trim())}”.</b></p><p>${m.chips.some((c) => !c.off) ? 'Tap one of the labels above to leave it out, or try' : 'Try'} a toy, a skill, or a maths word such as “taller” or “one more”.</p></div>${foot}`;
-  const ask = sentence && m.count > 3 ? followUp(m.parse, picked.length ? helper.answer.ask : null) : '';
-  return `${heard}${ask}<p class="found" aria-live="polite">${m.count} ${m.count === 1 ? 'activity' : 'activities'}</p>${choose}${groupsHtml(groups)}${foot}`;
+    return `${heard}<div class="empty"><p><b>Nothing matches “${esc(searchQ.trim())}”.</b></p><p>${m.chips.some((c) => !c.off) ? 'Tap one of the labels above to leave it out, or try' : 'Try'} a toy, a skill, or a maths word such as “taller” or “one more”.</p></div>`;
+  const ask = sentence && m.count > 3 ? followUp(m.parse) : '';
+  return `${heard}${ask}<p class="found" aria-live="polite">${m.count} ${m.count === 1 ? 'activity' : 'activities'}</p>${groupsHtml(groups)}`;
 }
 
 // ---------------------------------------------------------------- home
@@ -926,19 +776,8 @@ function who() {
 }
 
 // ---------------------------------------------------------------- settings
-// Can this phone run the chat helper? The same test as js/chat.js, kept here so that file is only fetched when wanted.
-function chatOk() {
-  if (!navigator.gpu) return { ok: false, why: 'This browser cannot run it (it has no WebGPU).' };
-  const apple = /iPhone|iPad|iPod/.test(navigator.userAgent) || (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1);
-  if (apple) return { ok: false, why: 'iPhones and iPads close the page when a model this size is loaded, so it is switched off here.' };
-  if (navigator.deviceMemory && navigator.deviceMemory < 4) return { ok: false, why: 'This phone has too little memory for it.' };
-  return { ok: true, why: '' };
-}
-const onOff = (key, on) => `<div class="seg" role="group"><button data-act="set" data-key="${key}" data-v="1" aria-pressed="${on}">On</button><button data-act="set" data-key="${key}" data-v="0" aria-pressed="${!on}">Off</button></div>`;
 function settingsScreen() {
   const s = store.settings();
-  if (s.meaning && smart.state === 'off') startSmart(); // so the line under the switch can say it is working
-  checkSaved();
   const c = store.child();
   return `${topBar('Settings')}
   <section class="page settings">
@@ -951,14 +790,6 @@ function settingsScreen() {
     <div class="setting"><h2>${esc(c.name)} was born</h2>${bornFields('born', c.born)}<p>${ageLine(c)} This stays on this phone.</p></div>
     <div class="setting"><h2>Our toys</h2><p>Untick anything you do not have. Its activities are hidden.</p>
       <div class="own">${TOYS.map((t) => `<button class="chip" data-act="own" data-v="${t.id}" aria-pressed="${s.toys.includes(t.id)}">${esc(t.name)}</button>`).join('')}</div>
-    </div>
-    <div class="setting"><h2>Search by sentence</h2>${onOff('meaning', s.meaning)}
-      <p>The search box already reads a sentence for the time, the toys, his age and what to leave out. Switched on, it also matches by meaning. One download of about 30 MB, kept on this phone. Nothing you type leaves the phone.</p>
-      <p id="smart-status" class="status">${smartStatus()}</p>
-    </div>
-    <div class="setting"><h2>Chat helper <b class="trial">Trial</b></h2>${chatOk().ok ? onOff('chat', s.chat) : ''}
-      <p>A small AI model that runs on this phone. After a sentence search, "Choose for me" lets it put the best few first. It only chooses: every word about an activity is still the activity's own. About 600 MB to download once, from Hugging Face. For recent Android phones, and not yet tried on a real one.</p>
-      <p id="helper-status" class="status">${helperStatus()}</p>
     </div>
     <a class="setting more" href="#/guide"><span><b>About the research</b><span>Keeping it play, what the studies do and do not show, and every source.</span></span>${icon.back}</a>
   </section>`;
@@ -1094,7 +925,6 @@ function onTap(el, e) {
     box.value = had ? `${had}. ${v}` : v;
     return onSearch(box);
   }
-  if (act === 'helper') return askHelper();
   if (act === 'surprise') {
     const a = store.pick(ACTIVITIES, flow?.a?.id);
     flow = null;
@@ -1169,15 +999,6 @@ function onTap(el, e) {
     const key = el.dataset.key;
     store.set(key, key === 'theme' ? v : v === '1');
     applySettings();
-    // The two search helpers are fetched when they are switched on, so the wait happens here and not mid-search.
-    if (key === 'meaning') v === '1' ? startSmart() : Object.assign(smart, { state: 'off', embed: null, key: null, qv: null, nv: null });
-    if (key === 'chat') {
-      if (v === '1') startHelper();
-      else {
-        Object.assign(helper, { state: 'off', answer: null, key: null });
-        chatMod().then((mod) => mod.removeChat()).then(checkSaved, checkSaved);
-      }
-    }
     return draw(true);
   }
   if (act === 'own') {
@@ -1379,7 +1200,6 @@ function onSearch(box) {
   if (!plain(searchQ)) dropped = new Set(); // a fresh start forgets what was tapped away
   document.getElementById('home-body').innerHTML = homeBody();
   document.querySelector('.search-clear').hidden = !searchQ;
-  if (store.settings().meaning && plain(searchQ)) smart.state === 'off' ? startSmart() : think();
 }
 document.addEventListener('input', (e) => {
   if (e.target.id === 'q') onSearch(e.target);

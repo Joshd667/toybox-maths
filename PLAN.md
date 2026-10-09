@@ -49,20 +49,17 @@ What the research found, and what was built instead:
 | Android | Gemma 4 E2B reported working on Pixel 8 Pro and Pixel 9. WebLLM 0.2.80 and later fails on some Qualcomm (Adreno) phones (issue 836, open). | User reports; no speed figures for any phone browser. |
 | Can a small model be trusted to write about research | No. Small models add unsupported claims in a few percent to over 20% of grounded answers, depending on the benchmark (Vectara leaderboard; arXiv 2603.11513). | No score exists for Gemma 4 E2B/E4B. |
 
-Built: all three layers described in `CLAUDE.md` under "Asking in a sentence". The model only ever chooses; it never writes.
+Built and kept: reading a sentence with plain code (`CLAUDE.md`, "Asking in a sentence"). No model.
 
-What the meaning model adds here is modest. On 60 activities the rules do most of the work; meaning matching adds phrases that
-share no word with an activity ("hide and seek" finds the hiding games) and better ordering. Expect it to matter more as the list grows.
+Built, tried by the owner, and removed the same day at his request:
 
-Still open for this:
+- **Matching by meaning** (all-MiniLM-L6-v2, 23 MB, run in WebAssembly from the repo). It worked, but on 60 activities it changed
+  few results: the rules already did most of the work. It mainly added phrases that share no word with an activity.
+- **A chat helper** (Gemma 3 1B through WebLLM, about 600 MB from Hugging Face), locked to choosing among activities already found.
+  Never run on a real phone.
 
-- **The chat helper has not been run on a real phone.** Its flow was tested with a stand-in model, and the real library was only
-  seen to fail cleanly where it had no network. Try it on the owner's phone: does it download, start, and choose sensibly?
-  If it fails on a Qualcomm phone, that is the known WebLLM bug; there is no older version to fall back to that has Gemma 3 1B.
-- **Meaning search has not been run on an iPhone.** It ran in desktop Chromium (ready in under 2 seconds from this site, about 25 ms a sentence).
-- Which phones the family uses was asked and not yet answered.
-- Revisit Gemma 4 E2B when LiteRT-LM JS leaves preview and documents locked (schema) output.
-- If the list reaches the hundreds, check `NEAR` and the sentences in the validator again.
+The code for both is in the git history (commits `32160c3` and `673134c`). Worth looking at again only if the list reaches the
+hundreds, or when a small model can be shown to run on the family's phones. Which phones those are was asked and not answered.
 
 ## Still to do
 

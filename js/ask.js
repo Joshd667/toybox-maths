@@ -6,15 +6,14 @@
 //                                                    -> understand() picks out the time, the toys, the age,
 //                                                       what to leave out and what he likes; menu() builds the list.
 //
-// Nothing here writes any words about an activity or its research. It only chooses and orders the
-// activities; the app then shows each one's own text. Keep it that way (see CLAUDE.md, "Asking in a sentence").
+// This is plain code: there is no AI model here. It only chooses and orders the activities;
+// the app then shows each one's own text (see CLAUDE.md, "Asking in a sentence").
 //
 // No DOM and no storage in this file, so tools/validate.mjs can test it. The app passes in what it knows
 // (which toys are ticked, the child's age, what he has managed).
 
 import { ACTIVITIES, STRANDS, TOYS, levelsOf } from './activities/index.js';
 import { makeRng } from './rng.js';
-import { cosine } from './meaning.js';
 
 const strandOf = (a) => STRANDS.find((s) => s.id === a.strand);
 const toyName = (id) => (id === 'none' ? 'No toys' : TOYS.find((t) => t.id === id)?.name || '');
@@ -211,7 +210,7 @@ export function understand(q) {
     const toy = Object.keys(TOY_SAYS).find((id) => (n = say(i, TOY_SAYS[id])));
     if (toy) {
       add(mood === 'no' ? p.avoid : mood === 'like' ? p.likeToys : p.have, toy);
-      // "loves animals" should also find the activities that are about animals, so the word stays for the meaning search
+      // "loves animals" should also find activities with the word in their title, so it stays as a word to look for
       if (mood === 'like') p.pos.push(toks[i].t);
       use(toks, i, n);
       i += n - 1;
@@ -286,46 +285,19 @@ function without(p, drop) {
   };
 }
 
-// ---------------------------------------------------------------- the words given to the meaning model
-// What is turned into numbers for each activity (tools/embed.mjs) and for what is typed (the app).
-// If this changes, run `node tools/embed.mjs` again; the validator checks.
-export function docText(a) {
-  const s = strandOf(a);
-  const one = a.make(makeRng(1), levelsOf(a)[0], { toys: a.toys });
-  const words = [...new Set(levelsOf(a).flatMap((l) => a.make(makeRng(1), l, { toys: a.toys }).words))];
-  const toys = a.toys.length ? a.toys.map((t) => toyName(t).toLowerCase()).join(', ') : 'no toys';
-  return `${a.title}. ${s.name}: ${a.skill}. ${a.why} Uses ${toys}. ${one.ask} Words: ${words.join(', ')}.`;
-}
-export const askText = (p) => p.pos.join(' ');
-export const notText = (p) => p.neg.join(' ');
-// A short fingerprint of some text, so the validator can tell when the saved numbers are out of date.
-export function mark(text) {
-  let h = 2166136261;
-  for (let i = 0; i < text.length; i++) h = Math.imul(h ^ text.charCodeAt(i), 16777619);
-  return (h >>> 0).toString(36);
-}
-
 // ---------------------------------------------------------------- the menu
-// How alike two meanings must be before it counts as a match. Set by trying the sentences in tools/validate.mjs.
-export const NEAR = 0.3;
-const CLOSE_MAX = 6;
-
 // q: what was typed.
 // o.drop:      Set of chip keys the adult has tapped away
 // o.age:       the child's age from his profile, or null
 // o.playable:  (a) => can it be played with the toys ticked in Settings?
 // o.managed:   (a) => has he already managed it? (then it never counts as "for later")
 // o.weight:    (a) => how keen the picker is on it (new ones first)
-// o.vectors:   { id: Float32Array } for the activities, or null if "Understand sentences" is off
-// o.qv, o.nv:  the numbers for what was asked for and what was not wanted, or null
-// Returns { mode, chips, groups: [{ name, note, acts: [{ a, toy }] }], count, meaning }
-//   mode 'words' or 'sentence'; meaning: true if there are words here that only the meaning model could use.
+// Returns { mode, chips, groups: [{ name, note, acts: [{ a, toy }] }], count, parse }. mode is 'words' or 'sentence'.
 export function menu(q, o = {}) {
   const full = understand(q);
   const p = without(full, o.drop);
   const chips = chipsOf(full).map((c) => ({ ...c, off: !!o.drop?.has(c.key) }));
   const playable = (a) => (o.playable ? o.playable(a) : true) || a.toys.some((t) => p.have.includes(t));
-  const sem = (a, v) => (v && o.vectors?.[a.id] ? cosine(v, o.vectors[a.id]) : 0);
   const row = (a) => ({ a, toy: a.toys.find((t) => p.have.includes(t)) || a.toys.find((t) => p.likeToys.includes(t)) || '' });
   const split = (acts, name = '') => {
     const on = acts.filter(playable);
@@ -336,19 +308,9 @@ export function menu(q, o = {}) {
     return groups;
   };
 
-  // ---- just words: the search as it has always been, with close meanings added underneath
+  // ---- just words: the search as it has always been
   const strict = full.sentence ? [] : search(q);
-  if (strict.length) {
-    const groups = split(strict);
-    const close = ACTIVITIES.filter((a) => !strict.includes(a) && playable(a))
-      .map((a) => [sem(a, o.qv), a])
-      .filter(([s]) => s >= NEAR)
-      .sort((x, y) => y[0] - x[0])
-      .slice(0, CLOSE_MAX)
-      .map(([, a]) => a);
-    if (close.length) groups.push({ name: 'Close in meaning', acts: close.map(row) });
-    return { mode: 'words', chips: [], groups, count: strict.length + close.length, meaning: false };
-  }
+  if (strict.length) return { mode: 'words', chips: [], groups: split(strict), count: strict.length };
 
   // ---- a sentence
   const fits = (a) => {
@@ -371,12 +333,10 @@ export function menu(q, o = {}) {
     const e = index.get(a.id);
     const lex = p.pos.length ? p.pos.reduce((s, t) => s + termScore(e, t), 0) / (8 * p.pos.length) : 0;
     const liked = a.toys.some((t) => p.likeToys.includes(t)) ? 0.35 : 0;
-    const near = sem(a, o.qv);
     const badLex = p.neg.some((t) => e.title.includes(' ' + t) || e.mid.includes(' ' + t)) ? 0.6 : 0;
-    const bad = Math.max(0, sem(a, o.nv) - NEAR) * 1.5 + badLex;
-    const hit = lex > 0 || liked > 0 || near >= NEAR;
+    const hit = lex > 0 || liked > 0;
     const tooYoung = p.age !== null && a.upTo < p.age ? 0.15 : 0;
-    return { a, hit, score: lex * 0.6 + liked + near - bad - tooYoung + 0.02 * (o.weight ? o.weight(a) : 0) };
+    return { a, hit, score: lex * 0.6 + liked - badLex - tooYoung + 0.02 * (o.weight ? o.weight(a) : 0) };
   });
   scored.sort((x, y) => y.score - x.score);
   const age = p.age !== null ? p.age : (o.age ?? null);
@@ -396,5 +356,5 @@ export function menu(q, o = {}) {
   if (laterActs.length) groups.push({ name: 'For later', note: 'later', acts: laterActs.map(row) });
   const offActs = [...off.flatMap((g) => g.acts), ...[...also].filter((a) => !playable(a)).map(row)];
   if (offActs.length) groups.push({ name: 'Toy switched off', note: 'off', acts: offActs });
-  return { mode: 'sentence', chips, groups, count: groups.reduce((n, g) => n + g.acts.length, 0), meaning: !!(p.pos.length || p.neg.length), parse: p };
+  return { mode: 'sentence', chips, groups, count: groups.reduce((n, g) => n + g.acts.length, 0), parse: p };
 }

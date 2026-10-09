@@ -7,10 +7,7 @@
 // When you add a new file to the app, add it to FILES below.
 // tools/validate.mjs checks this list against the repo and fails if they differ.
 
-const CACHE = 'toybox-maths-18';
-// The big files behind search by sentence and the chat helper (see ai/README.md). They are not in FILES:
-// they are kept the first time they are used, and are not thrown away when the app is updated.
-const AI_CACHE = 'toybox-ai-1';
+const CACHE = 'toybox-maths-19';
 
 const FILES = [
   './',
@@ -27,9 +24,6 @@ const FILES = [
   './js/rng.js',
   './js/research.js',
   './js/ask.js',
-  './js/meaning.js',
-  './js/vectors.js',
-  './js/chat.js',
   './js/activities/index.js',
   './js/activities/kit.js',
   './js/activities/counting.js',
@@ -58,7 +52,7 @@ self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE && k !== AI_CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -66,20 +60,6 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== 'GET' || url.origin !== location.origin) return;
-  // The model files never change once published, so the saved copy is used first. (Only these: the app's own
-  // files are always asked for fresh, see below.)
-  if (url.pathname.includes('/ai/')) {
-    e.respondWith(
-      caches.open(AI_CACHE).then(async (cache) => {
-        const saved = await cache.match(e.request);
-        if (saved) return saved;
-        const res = await fetch(e.request);
-        if (res.ok) cache.put(e.request, res.clone());
-        return res;
-      })
-    );
-    return;
-  }
   e.respondWith(
     caches.open(CACHE).then(async (cache) => {
       const saved = await cache.match(e.request, { ignoreSearch: true });

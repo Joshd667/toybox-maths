@@ -12,8 +12,7 @@ const fresh = () => ({
   current: null, // id of the child who is playing
   children: [], // see newChild() below
   // questions / goes: how many were chosen last time, offered again next time
-  // meaning: match searches by meaning (a 30 MB download). chat: the chat helper (a 600 MB download). Both start off.
-  settings: { theme: 'system', sound: true, motion: true, questions: 5, goes: 1, toys: TOYS.map((t) => t.id), meaning: false, chat: false },
+  settings: { theme: 'system', sound: true, motion: true, questions: 5, goes: 1, toys: TOYS.map((t) => t.id) },
 });
 const newChild = (name, animal, pronoun, born) => ({
   id: 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
