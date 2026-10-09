@@ -27,7 +27,8 @@ Montessori: recorded in `NOT_CLAIMED` and in `CLAUDE.md`. Ideas borrowed, no cla
 
 ## Favourites (October 2026)
 
-Built: a heart on every list row, on Get ready and on the finish screen; a Favourites tab with "Pick a favourite".
+Built: a heart inside every list row, in the top bar of an open activity and on the finish screen; a Favourites tab with
+"Pick a favourite" and filters by skill and toy; a search box on the home screen.
 Kept per child, on the phone. `CLAUDE.md` has the rules. Left out on purpose, to add only if asked:
 
 - Putting favourites in an order by hand (they are listed newest first).

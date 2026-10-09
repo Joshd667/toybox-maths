@@ -187,24 +187,43 @@ button { cursor: pointer; touch-action: manipulation; }
 .list.later a { background: none; border: 2px dashed var(--line); }
 
 /* ------------------------------------------------------------ favourites */
-/* the heart: an outline until tapped, then filled. One sits at the end of every list row and on the Get ready screen */
-.list li { display: flex; align-items: stretch; gap: 6px; }
-.list li > a { flex: 1; min-width: 0; }
+/* the heart: an outline until tapped, then filled. In a list it sits inside the row, at the right-hand end:
+   the row is the link and the heart is a button laid over its end, so the two never nest */
+.list li { position: relative; }
+.list li > a { padding-right: 50px; }
 .heart {
-  width: 44px; min-height: 48px; flex: none; display: grid; place-items: center; padding: 0;
-  border: 0; border-radius: 16px; background: var(--surface); color: var(--muted);
+  width: 44px; height: 44px; flex: none; display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 50%; background: var(--surface); color: var(--muted);
 }
+.list .heart { position: absolute; right: 3px; top: 50%; margin-top: -24px; width: 46px; height: 48px; background: none; color: color-mix(in srgb, var(--muted) 70%, var(--surface)); }
 .heart .ico { width: 24px; height: 24px; }
+.list .heart .ico { width: 22px; height: 22px; }
 .heart path, .fav-btn path, .fav-big path { fill: none; }
 .heart[aria-pressed='true'], .fav-btn[aria-pressed='true'] .ico { color: var(--fav); }
 .heart[aria-pressed='true'] path, .fav-btn[aria-pressed='true'] path { fill: currentColor; }
-.list.later .heart { background: none; border: 2px dashed var(--line); }
-.top .heart { width: 44px; min-height: 44px; border-radius: 50%; }
 .beat .ico { animation: beat 0.45s cubic-bezier(0.2, 1.8, 0.4, 1); }
 @keyframes beat { from { transform: scale(0.5); } to { transform: none; } }
 body.calm .beat .ico { animation: none; }
 .fav-btn { width: 100%; margin-top: 16px; }
-.fav-lede { margin: 4px 0 14px; }
+/* two rows of chips on the Favourites screen: skills, then toys */
+.chips + .chips { margin-top: 6px; }
+
+/* ------------------------------------------------------------ search (on the home screen) */
+.search { position: relative; display: flex; align-items: center; margin-top: 12px; color: var(--muted); }
+.search > .ico { position: absolute; left: 16px; pointer-events: none; }
+.search input {
+  width: 100%; min-height: 52px; padding: 8px 48px 8px 48px; border: 2px solid var(--line); border-radius: 18px;
+  background: var(--surface); font-size: 18px; color: var(--ink); appearance: none; -webkit-appearance: none;
+}
+.search input::placeholder { color: var(--muted); }
+.search input::-webkit-search-cancel-button { display: none; }
+.search input:focus { outline: none; border-color: var(--accent); }
+.search-clear { position: absolute; right: 4px; width: 44px; height: 44px; display: grid; place-items: center; border: 0; background: none; color: var(--muted); }
+.search-clear .ico { width: 18px; height: 18px; }
+.found { font-size: 14px; font-weight: 700; color: var(--muted); margin: 14px 0 -2px; }
+#home-body > .empty { margin-top: 14px; }
+#home-body > .empty p { margin: 0 0 4px; }
+.page > .empty .btn { margin-top: 10px; }
 .fav-empty { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 28px 18px 18px; margin-top: 8px; }
 .fav-empty .say { color: var(--ink); margin: 0; }
 .fav-empty p { margin: 0 0 12px; text-wrap: balance; }

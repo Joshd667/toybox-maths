@@ -205,19 +205,32 @@ The owner asked for a way to favourite activities and a menu to find them. A hea
 
 - **Per child.** `favs` on the child's record is a list of activity ids, the newest first. `store.favs()`, `isFav()`, `toggleFav()`.
   Records saved before favourites existed are given an empty list when loaded, so the storage key did not change.
-- **Where the heart is:** at the end of every row in every list, beside the "i" on the Get ready screen, and as a button
-  ("Add to favourites") on the finish screen once the adult has rated the turn. It is not shown while questions are being asked:
-  that screen is the child's.
+- **Where the heart is:** inside every row of every list, at its right-hand end (`actRow`); in the top bar of an open activity,
+  beside the "i", on Get ready and all through the questions (the owner asked for it there); and as a button
+  ("Add to favourites") on the finish screen once the adult has rated the turn.
+  In a row the heart is plain, with no box of its own: the owner disliked it as a separate tile beside the row.
 - **A heart, not a star.** Gold stars are what he earns. Do not reuse them for this.
 - **A tap changes the heart where it stands** (`onTap`, 'fav'). Nothing is redrawn. On the Favourites screen the row stays until
   you leave, so a slip is one tap to undo; "Pick a favourite" skips a row whose heart has just been taken off.
-- **The Favourites screen** is `list('fav')`: the same rows as the other lists, one flat list, with "Pick a favourite" at the top
-  when there are two or more. Toy chips appear once there are more than five. With none, it says how to add one.
+- **The Favourites screen** is `favourites()`: the same rows as the other lists, one flat list, with "Pick a favourite" at the top
+  when there are two or more. Two rows of chips filter it, by skill and by toy, and both can be on at once
+  (the owner asked for filtering). With none, it says how to add one.
 - Favourites are never moved to "For later", and "Pick a favourite" does not leave out ones aimed at older children
   (`pick(pool, not, anyAge)`): the adult chose them on purpose. One whose toys are all unticked in Settings is kept,
   in a "Toy switched off" group.
 - "Just pick one" on the home screen takes no notice of favourites. It is for finding something new.
-- In a list row the line under the title now runs the full width, under the badge, to make room for the heart.
+- In a list row the line under the title runs the full width, under the badge, to make room for the heart.
+
+## Search
+
+The owner asked for a way to search. The box is on the home screen, under "Just pick one". Typing swaps the skills or toys
+below it for matching rows; clearing it brings them back. Only the part under the box is redrawn (`onSearch`), so the keyboard stays up.
+What was typed is kept while the app is open, so closing an activity returns to the results.
+
+- `search()` in `app.js` looks at the title, strand, skill, toy names (plus other names for them in `TOY_ALSO`: "train", "rabbit", "brick"),
+  `needs`, and the maths `words` of each difficulty. Every word typed must match. Title matches come first.
+- Nothing is hidden: an activity whose toy is unticked shows in a "Toy switched off" group, as on Favourites.
+- A new toy should get a line in `TOY_ALSO` if people call it something else.
 
 ## Publishing
 

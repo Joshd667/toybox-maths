@@ -1,7 +1,7 @@
 // app.js — the screens. Plain JavaScript, no framework, no build step.
 //
 // Screens are functions that return HTML text. route() picks one from the address:
-//   #/                 home: choose a toy (or a skill)
+//   #/                 home: choose a toy (or a skill), or search
 //   #/toy/<id>         activities for one toy          #/skill/<id>   activities for one skill
 //   #/play/<id>/<toy>  an activity (get ready -> set up -> questions -> finish)
 //   #/favourites       the current child's favourite activities (hearts are on every list row and Get ready screen)
@@ -92,6 +92,7 @@ const icon = {
   book: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5ZM12 6v13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   lock: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
   heart: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3C7.6 17.2 4 13.9 4 10.1A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 8 2.1c0 3.8-3.6 7.1-8 10.2Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>',
+  search: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M15.5 15.5l5 5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg>',
   tips: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/></svg>',
   star: (on, now) => `<svg class="star${on ? ' on' : ''}${now ? ' now' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z"/></svg>`,
 };
@@ -118,9 +119,82 @@ function topBar(title, back) {
   </header>`;
 }
 
+// ---------------------------------------------------------------- one row in any list of activities
+// `toy` is passed on to the activity when the list is already about one toy. `meta` chooses the small print:
+// 'toy' says the skill ("Counting: counting things"), 'skill' says how long, 'all' says the strand and how long.
+// The heart sits inside the row, at its right-hand end. It is a button beside the link, not inside it.
+function actRow(a, toy, meta) {
+  const s = strandOf(a);
+  const last = store.actState(a.id).last;
+  const small = meta === 'toy' ? `${s.name}: ${a.skill.toLowerCase()}` : meta === 'all' ? `${s.name}, ${a.minutes} min` : `${a.minutes} min`;
+  return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
+    <span class="li-title">${esc(a.title)}</span>
+    <span class="li-meta">${agePill(a)}${esc(small)}</span>
+    ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
+  </a>${heart(a.id)}</li>`;
+}
+const usesToy = (a, t) => (t === 'none' ? a.toys.length === 0 : a.toys.includes(t));
+const OFF_NOTE = 'These need a toy that is unticked in Settings. Tick it there to bring them back.';
+// A row of filter chips. Skills are tinted with their colour; toys carry a little picture.
+const chipRow = (act, label, all, chips, current) => `<div class="chips" role="group" aria-label="${label}">
+      <button class="chip" data-act="${act}" data-v="" aria-pressed="${!current}">${all}</button>
+      ${chips.map((c) => `<button class="chip${c.colour ? ' tint' : ' with-pic'}" ${c.colour ? `style="--c:${c.colour}"` : ''} data-act="${act}" data-v="${c.id}" aria-pressed="${current === c.id}">${c.colour ? '' : `<span class="chip-pic">${pic(toyArt[c.id]())}</span>`}${esc(c.name)}</button>`).join('')}
+    </div>`;
+const skillChips = (acts) => STRANDS.filter((s) => acts.some((a) => a.strand === s.id)).map((s) => ({ id: s.id, name: s.name, colour: s.colour }));
+const toyChips = (acts) => toyTiles().filter((t) => acts.some((a) => usesToy(a, t.id))).map((t) => ({ id: t.id, name: t.name }));
+const groupsHtml = (groups) =>
+  groups.map(([name, rows, note]) => `${name ? `<h2 class="group">${esc(name)}</h2>` : ''}${note ? `<p class="group-note">${esc(note)}</p>` : ''}<ul class="list${note ? ' later' : ''}">${rows.join('')}</ul>`).join('');
+
+// ---------------------------------------------------------------- search
+// The box is on the home screen. Typing swaps the skills or toys below it for matching activities; clearing it brings them back.
+// It looks at the title, the skill, the toys (and a few other names for them), the extra things to fetch,
+// and the maths words the activity uses ("taller", "one more"), so a search for a word finds the games that practise it.
+let searchQ = '';
+const TOY_ALSO = { duplo: 'brick bricks lego', wooden: 'block blocks shapes', cars: 'car vehicle', animals: 'animal farm zoo', brio: 'train trains track railway engine wagon', cubes: 'cube mathlink links', numicon: 'shapes pegs', bunny: 'rabbit bunny peek' };
+const plain = (s) => String(s).toLowerCase().replace(/[^a-z0-9½]+/g, ' ').trim();
+let searchIndex = null;
+function indexOf() {
+  if (searchIndex) return searchIndex;
+  searchIndex = ACTIVITIES.map((a) => {
+    const words = levelsOf(a).flatMap((l) => a.make(makeRng(1), l, { toys: a.toys }).words);
+    const toys = a.toys.length ? a.toys.map((t) => `${toyName(t)} ${TOY_ALSO[t] || ''}`).join(' ') : 'no toys phone';
+    return { a, title: ' ' + plain(a.title), mid: ' ' + plain(`${strandOf(a).name} ${a.skill} ${toys}`), rest: ' ' + plain(`${a.needs.join(' ')} ${words.join(' ')} ${strandOf(a).blurb}`) };
+  });
+  return searchIndex;
+}
+// Every word typed must be found somewhere. A match in the title counts most, and the start of a word beats the middle.
+function search(q) {
+  const terms = plain(q).split(' ').filter(Boolean);
+  if (!terms.length) return [];
+  const hits = [];
+  for (const e of indexOf()) {
+    let score = 0;
+    for (const t of terms) {
+      const s = e.title.includes(' ' + t) ? 8 : e.title.includes(t) ? 6 : e.mid.includes(' ' + t) ? 4 : e.mid.includes(t) ? 3 : e.rest.includes(' ' + t) ? 2 : e.rest.includes(t) ? 1 : 0;
+      if (!s) { score = 0; break; }
+      score += s;
+    }
+    if (score) hits.push([score, e.a]);
+  }
+  return hits.sort((x, y) => y[0] - x[0]).map(([, a]) => a); // sort is stable: ties stay in the app's own order
+}
+function searchResults() {
+  const found = search(searchQ);
+  if (!found.length)
+    return `<div class="empty"><p><b>Nothing matches “${esc(searchQ.trim())}”.</b></p><p>Try a toy, a skill, or a maths word such as “taller” or “one more”.</p></div>`;
+  const on = found.filter(store.playable);
+  const off = found.filter((a) => !store.playable(a));
+  const groups = [];
+  if (on.length) groups.push(['', on.map((a) => actRow(a, '', 'all'))]);
+  if (off.length) groups.push(['Toy switched off', off.map((a) => actRow(a, '', 'all')), OFF_NOTE]);
+  return `<p class="found" aria-live="polite">${found.length} ${found.length === 1 ? 'activity' : 'activities'}</p>${groupsHtml(groups)}`;
+}
+
 // ---------------------------------------------------------------- home
 let homeMode = 'skill';
-function home() {
+// Everything under the search box: what was found, or the skills or toys to browse.
+function homeBody() {
+  if (plain(searchQ)) return searchResults();
   const tiles =
     homeMode === 'toy'
       ? `<div class="tiles">${toyTiles().map((t) => {
@@ -131,63 +205,79 @@ function home() {
           const n = forSkill(s.id).length;
           return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${n} ${n === 1 ? 'activity' : 'activities'}: ${esc(subSkills(s.id).join(', ').toLowerCase())}</span></a>`;
         }).join('')}</div>`;
-  return `${topBar('')}
-  <section class="page">
-    <button class="go" data-act="surprise">${icon.dice}<span>Just pick one</span></button>
-    <div class="seg wide" role="group" aria-label="Browse">
+  return `<div class="seg wide" role="group" aria-label="Browse">
       <button data-act="home-mode" data-v="skill" aria-pressed="${homeMode === 'skill'}">By skill</button>
       <button data-act="home-mode" data-v="toy" aria-pressed="${homeMode === 'toy'}">By toy</button>
     </div>
-    ${tiles}
+    ${tiles}`;
+}
+function home() {
+  return `${topBar('')}
+  <section class="page">
+    <button class="go" data-act="surprise">${icon.dice}<span>Just pick one</span></button>
+    <form class="search" role="search" data-form="search">
+      ${icon.search}
+      <input id="q" type="search" name="q" value="${esc(searchQ)}" placeholder="Search activities" aria-label="Search activities" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="search" />
+      <button type="button" class="search-clear" data-act="search-clear" aria-label="Clear search"${searchQ ? '' : ' hidden'}>${icon.close}</button>
+    </form>
+    <div id="home-body">${homeBody()}</div>
   </section>`;
 }
 
-// ---------------------------------------------------------------- a list of activities (one toy, one skill, or the favourites)
+// ---------------------------------------------------------------- a list of activities (one toy, or one skill)
 let listFilter = null; // the chip that is switched on, if any
 function list(kind, id) {
   const isToy = kind === 'toy';
-  const isFav = kind === 'fav';
-  const all = isFav ? store.favs().map((f) => byId[f]) : isToy ? forToy(id) : forSkill(id);
-  const title = isFav ? 'Favourites' : isToy ? toyName(id) : STRANDS.find((s) => s.id === id)?.name;
+  const all = isToy ? forToy(id) : forSkill(id);
+  const title = isToy ? toyName(id) : STRANDS.find((s) => s.id === id)?.name;
   if (!title) return null;
-  if (isFav && !all.length) return noFavs();
   // Chips filter by the other thing: skills when looking at a toy, toys when looking at a skill.
-  const chips = isToy
-    ? STRANDS.filter((s) => all.some((a) => a.strand === s.id)).map((s) => ({ id: s.id, name: s.name, colour: s.colour }))
-    : toyTiles().filter((t) => all.some((a) => (t.id === 'none' ? a.toys.length === 0 : a.toys.includes(t.id)))).map((t) => ({ id: t.id, name: t.name }));
+  const chips = isToy ? skillChips(all) : toyChips(all);
   if (!chips.some((c) => c.id === listFilter)) listFilter = null;
-  const shown = all.filter((a) => !listFilter || (isToy ? a.strand === listFilter : listFilter === 'none' ? a.toys.length === 0 : a.toys.includes(listFilter)));
-  const toy = isToy ? id : listFilter && listFilter !== 'none' ? listFilter : '';
-  const item = (a) => {
-    const s = strandOf(a);
-    const last = store.actState(a.id).last;
-    return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
-      <span class="li-title">${esc(a.title)}</span>
-      <span class="li-meta">${agePill(a)}${isToy ? esc(s.name) + ': ' : isFav ? esc(s.name) + ', ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
-      ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
-    </a>${heart(a.id)}</li>`;
-  };
+  const shown = all.filter((a) => !listFilter || (isToy ? a.strand === listFilter : usesToy(a, listFilter)));
+  const toy = isToy ? id : listFilter || '';
+  const row = (a) => actRow(a, toy, isToy ? 'toy' : 'skill');
   // Looking at one skill: group the activities under its sub-skills.
   // Activities aimed at older children than this one stay on the page, in a group of their own at the end.
-  // Favourites are one list, the newest first, and are never moved to "For later": the adult chose them on purpose.
-  // One whose toys are all switched off in Settings stays on the page, in a group of its own, so it is not lost.
-  const now = shown.filter((a) => (isFav ? store.playable(a) : !store.later(a)));
-  const older = isFav ? [] : shown.filter((a) => store.later(a)).sort((a, b) => a.age - b.age);
-  const off = isFav ? shown.filter((a) => !store.playable(a)) : [];
-  const groups = (isToy || isFav ? [['', now]] : subSkills(id).map((k) => [k, now.filter((a) => a.skill === k)])).filter(([, acts]) => acts.length);
-  if (older.length) groups.push(['For later', older, `Aimed at children older than about ${ageWord(store.ageOf())}. Still fine to try: one that goes well moves up the list.`]);
-  if (off.length) groups.push(['Toy switched off', off, 'These need a toy that is unticked in Settings. Tick it there to bring them back.']);
-  // With only a few favourites the toy chips are clutter; they earn their place once the list is long enough to scroll.
-  const showChips = !isFav || (all.length > 5 && chips.length > 1);
-  return `${isFav ? topBar(title) : topBar(title, '#/')}
+  const now = shown.filter((a) => !store.later(a));
+  const older = shown.filter((a) => store.later(a)).sort((a, b) => a.age - b.age);
+  const groups = (isToy ? [['', now]] : subSkills(id).map((k) => [k, now.filter((a) => a.skill === k)])).filter(([, acts]) => acts.length).map(([k, acts]) => [k, acts.map(row)]);
+  if (older.length) groups.push(['For later', older.map(row), `Aimed at children older than about ${ageWord(store.ageOf())}. Still fine to try: one that goes well moves up the list.`]);
+  return `${topBar(title, '#/')}
   <section class="page">
-    ${isFav ? `<p class="lede fav-lede">${esc(store.child().name)}'s favourites. Tap a heart to take one off.</p>` : ''}
-    ${!isFav || now.length > 1 ? `<button class="go small" data-act="pick-here">${icon.dice}<span>${isFav ? 'Pick a favourite' : 'Pick one of these'}</span></button>` : ''}
-    <div class="chips" role="group" aria-label="Filter"${showChips ? '' : ' hidden'}>
-      <button class="chip" data-act="filter" data-v="" aria-pressed="${!listFilter}">All</button>
-      ${chips.map((c) => `<button class="chip${c.colour ? ' tint' : ' with-pic'}" ${c.colour ? `style="--c:${c.colour}"` : ''} data-act="filter" data-v="${c.id}" aria-pressed="${listFilter === c.id}">${c.colour ? '' : `<span class="chip-pic">${pic(toyArt[c.id]())}</span>`}${esc(c.name)}</button>`).join('')}
-    </div>
-    ${groups.map(([name, acts, note]) => `${name ? `<h2 class="group">${esc(name)}</h2>` : ''}${note ? `<p class="group-note">${esc(note)}</p>` : ''}<ul class="list${note ? ' later' : ''}">${acts.map(item).join('')}</ul>`).join('')}
+    <button class="go small" data-act="pick-here">${icon.dice}<span>Pick one of these</span></button>
+    ${chipRow('filter', 'Filter', 'All', chips, listFilter)}
+    ${groupsHtml(groups)}
+  </section>`;
+}
+
+// ---------------------------------------------------------------- favourites
+// One flat list, the newest first, with two rows of chips: by skill and by toy. Both can be on at once.
+// Favourites are never moved to "For later": the adult chose them on purpose.
+// One whose toys are all switched off in Settings stays on the page, in a group of its own, so it is not lost.
+let favSkill = null;
+let favToy = null;
+function favourites() {
+  const all = store.favs().map((f) => byId[f]);
+  if (!all.length) return noFavs();
+  const skills = skillChips(all);
+  const toys = toyChips(all);
+  if (!skills.some((c) => c.id === favSkill)) favSkill = null;
+  if (!toys.some((c) => c.id === favToy)) favToy = null;
+  const shown = all.filter((a) => (!favSkill || a.strand === favSkill) && (!favToy || usesToy(a, favToy)));
+  const row = (a) => actRow(a, favToy || '', 'all');
+  const on = shown.filter(store.playable);
+  const off = shown.filter((a) => !store.playable(a));
+  const groups = [];
+  if (on.length) groups.push(['', on.map(row)]);
+  if (off.length) groups.push(['Toy switched off', off.map(row), OFF_NOTE]);
+  return `${topBar('Favourites')}
+  <section class="page">
+    ${on.length > 1 ? `<button class="go small" data-act="pick-here">${icon.dice}<span>Pick a favourite</span></button>` : ''}
+    ${chipRow('fav-skill', 'Filter by skill', 'All skills', skills, favSkill)}
+    ${chipRow('fav-toy', 'Filter by toy', 'All toys', toys, favToy)}
+    ${shown.length ? groupsHtml(groups) : '<div class="empty"><p>No favourites fit both of those.</p><button class="btn" data-act="fav-clear">Show them all</button></div>'}
+    <p class="small-note">${esc(store.child().name)}'s favourites. Tap a heart to take one off.</p>
   </section>`;
 }
 const shownIds = () => [...document.querySelectorAll('.list a')].map((el) => el.dataset.id);
@@ -292,7 +382,7 @@ function playTop() {
   return `<header class="top play-top">
     <a class="round" href="${from}" aria-label="Close">${icon.close}</a>
     <h1>${going ? `${isBuild(flow.a) ? 'Go' : 'Question'} ${flow.q + 1} of ${flow.n}` : esc(flow.a.title)}</h1>
-    ${going ? '' : heart(flow.a.id)}
+    ${heart(flow.a.id)}
     <button class="round" data-act="tips" aria-label="Tips and why">${icon.tips}</button>
     ${going ? track() : ''}
   </header>`;
@@ -764,7 +854,7 @@ function screen() {
     const html = list(page, a);
     if (html) return { html, tab: 'home' };
   }
-  if (page === 'favourites') return { html: list('fav'), tab: 'fav' };
+  if (page === 'favourites') return { html: favourites(), tab: 'fav' };
   if (page === 'progress') return { html: progress(), tab: 'progress' };
   if (page === 'guide') return { html: guide(), tab: 'settings' };
   if (page === 'settings') return { html: settingsScreen(), tab: 'settings' };
@@ -778,6 +868,11 @@ function draw(keepScroll) {
   document.body.classList.toggle('playing', !!s.playing);
   document.querySelectorAll('.tabs a').forEach((el) => el.setAttribute('aria-current', el.dataset.tab === s.tab ? 'page' : 'false'));
   window.scrollTo(0, keepScroll ? y : 0);
+  // A filter chip that is switched on may be off the end of its row: bring it back into view.
+  document.querySelectorAll('.chips [aria-pressed="true"]').forEach((c) => {
+    const row = c.parentElement;
+    if (c.offsetLeft + c.offsetWidth > row.scrollLeft + row.clientWidth || c.offsetLeft < row.scrollLeft) row.scrollLeft = c.offsetLeft - 16;
+  });
   const a = parts()[0] === 'play' && byId[parts()[1]];
   document.title = a ? `${a.title} – Toybox Maths` : 'Toybox Maths';
 }
@@ -809,6 +904,17 @@ function onTap(el, e) {
     listFilter = v || null;
     return draw(true);
   }
+  if (act === 'fav-skill' || act === 'fav-toy' || act === 'fav-clear') {
+    if (act !== 'fav-toy') favSkill = (act === 'fav-skill' && v) || null;
+    if (act !== 'fav-skill') favToy = (act === 'fav-toy' && v) || null;
+    return draw(true);
+  }
+  if (act === 'search-clear') {
+    const box = document.getElementById('q');
+    box.value = '';
+    onSearch(box);
+    return box.focus();
+  }
   if (act === 'surprise') {
     const a = store.pick(ACTIVITIES, flow?.a?.id);
     flow = null;
@@ -819,7 +925,7 @@ function onTap(el, e) {
     const favPage = parts()[0] === 'favourites';
     const ids = shownIds().filter((id) => !favPage || store.isFav(id));
     const a = store.pick(ACTIVITIES.filter((x) => ids.includes(x.id)), null, favPage);
-    const toy = parts()[0] === 'toy' ? parts()[1] : '';
+    const toy = parts()[0] === 'toy' ? parts()[1] : favPage ? favToy || '' : '';
     return a && go(`#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}`);
   }
 
@@ -1078,7 +1184,20 @@ document.addEventListener('change', (e) => {
     draw(true);
   }
 });
+// Typing in the search box changes only what is under it, so the box keeps its place and the keyboard stays up.
+function onSearch(box) {
+  searchQ = box.value;
+  document.getElementById('home-body').innerHTML = homeBody();
+  document.querySelector('.search-clear').hidden = !searchQ;
+}
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'q') onSearch(e.target);
+});
 document.addEventListener('submit', (e) => {
+  if (e.target.dataset.form === 'search') {
+    e.preventDefault();
+    return document.getElementById('q').blur(); // the Search key puts the keyboard away; the results are already showing
+  }
   if (e.target.dataset.form === 'edit-child') {
     e.preventDefault();
     const k = store.children().find((c) => c.id === e.target.dataset.id);
