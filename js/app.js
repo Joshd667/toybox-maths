@@ -776,6 +776,7 @@ function who() {
 }
 
 // ---------------------------------------------------------------- settings
+const onOff = (key, on) => `<div class="seg" role="group"><button data-act="set" data-key="${key}" data-v="1" aria-pressed="${on}">On</button><button data-act="set" data-key="${key}" data-v="0" aria-pressed="${!on}">Off</button></div>`;
 function settingsScreen() {
   const s = store.settings();
   const c = store.child();
