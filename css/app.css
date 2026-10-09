@@ -247,6 +247,8 @@ body.calm .beat .ico { animation: none; }
 .smart p b { color: var(--ink); }
 .trial { font: 700 12px/1 var(--body, inherit); letter-spacing: 0.04em; text-transform: uppercase; vertical-align: middle; padding: 4px 8px; border-radius: 999px; background: color-mix(in srgb, var(--accent) 16%, var(--surface)); color: var(--accent); }
 .setting p:empty { display: none; }
+.setting .status { font-weight: 600; color: var(--ink); }
+.setting .status .done { color: var(--ok); }
 
 /* ------------------------------------------------------------ playing */
 .play-top { flex-wrap: wrap; row-gap: 10px; }

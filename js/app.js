@@ -156,7 +156,9 @@ const groupsHtml = (groups) =>
 let searchQ = '';
 let dropped = new Set(); // chips under the box that the adult has tapped away
 // state is 'off', 'loading', 'ready' or 'failed'. key says which typing qv and nv belong to.
-const smart = { state: 'off', embed: null, vectors: null, key: null, qv: null, nv: null };
+const smart = { state: 'off', progress: 0, embed: null, vectors: null, key: null, qv: null, nv: null };
+// Is each download saved on this phone? null until looked up (see checkSaved).
+const saved = { meaning: null, chat: null };
 const helper = { state: 'off', progress: 0, busy: false, key: null, answer: null };
 const meaningKey = (p) => askText(p) + '|' + notText(p);
 const managed = (a) => ['right', 'easy'].includes(store.actState(a.id).last?.rating);
@@ -181,12 +183,19 @@ function startSmart() {
   import('./vectors.js')
     .then(async (v) => {
       smart.vectors = Object.fromEntries(Object.entries(v.VECTORS).map(([id, [, text]]) => [id, unpack(text)]));
-      smart.embed = await loadEmbedder();
+      smart.embed = await loadEmbedder((f) => {
+        smart.progress = f;
+        const el = document.getElementById('smart-status');
+        if (el) el.innerHTML = smartStatus();
+      });
       smart.state = 'ready';
       think();
     })
     .catch(() => (smart.state = 'failed'))
-    .finally(redrawSearch);
+    .finally(() => {
+      redrawSearch();
+      checkSaved();
+    });
 }
 // Turn what is typed into numbers, a moment after the typing stops.
 let thinkTimer = 0;
@@ -204,14 +213,29 @@ function think() {
     redrawSearch();
   }, 250);
 }
-const smartStatus = () =>
-  smart.state === 'loading'
-    ? 'Getting it ready. This is the one download.'
-    : smart.state === 'failed'
-      ? 'Could not fetch it. Check the connection, then switch it off and on again.'
-      : smart.state === 'ready'
-        ? 'Ready.'
-        : '';
+// Look in the phone's storage for the two downloads, so Settings can say plainly whether each one is there.
+async function checkSaved() {
+  try {
+    const has = async (cache, part) => (await caches.has(cache)) && (await (await caches.open(cache)).keys()).some((r) => r.url.includes(part));
+    saved.meaning = await has('toybox-ai-1', 'minilm/model.onnx');
+    saved.chat = await has('webllm/model', 'gemma3-1b');
+  } catch {
+    saved.meaning = saved.chat = null; // storage cannot be read here
+  }
+  for (const [id, text] of [['smart-status', smartStatus], ['helper-status', helperStatus]]) {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = text();
+  }
+}
+const TICK = '<b class="done">✓ Downloaded.</b>';
+// The line under each switch in Settings. It always says whether the download is on the phone.
+function smartStatus() {
+  if (!store.settings().meaning) return saved.meaning ? 'Switched off. The download is still on this phone, so switching it on again is instant.' : 'Not downloaded.';
+  if (smart.state === 'loading') return smart.progress > 0 && smart.progress < 1 ? `Downloading: ${Math.round(smart.progress * 100)}%` : 'Getting it ready…';
+  if (smart.state === 'failed') return 'Could not download it. Check the connection, then switch it off and on again.';
+  if (smart.state === 'ready') return `${TICK} Working now, and with no connection too.`;
+  return saved.meaning ? `${TICK} It starts when you search.` : 'Not downloaded yet. It downloads when you next search.';
+}
 
 // ----- the chat helper
 const chatMod = () => import('./chat.js');
@@ -232,15 +256,16 @@ async function startHelper() {
     helper.state = 'failed';
   }
   redrawSearch();
+  checkSaved();
 }
-const helperStatus = () =>
-  helper.state === 'loading'
-    ? `Fetching and starting it: ${Math.round(helper.progress * 100)}%. Keep this page open.`
-    : helper.state === 'failed'
-      ? 'It did not start on this phone. Search carries on without it. Switch it off to free the space.'
-      : helper.state === 'ready'
-        ? 'Ready. Type a sentence in the search box, then tap "Choose for me".'
-        : '';
+function helperStatus() {
+  if (!chatOk().ok) return esc(chatOk().why);
+  if (!store.settings().chat) return saved.chat ? 'Switched off. Removing the download…' : 'Not downloaded.';
+  if (helper.state === 'loading') return `${saved.chat ? 'Starting it' : 'Downloading'}: ${Math.round(helper.progress * 100)}%. Keep this page open.`;
+  if (helper.state === 'failed') return 'It did not start on this phone. Search carries on without it. Switch it off to free the space.';
+  if (helper.state === 'ready') return `${TICK} Running. Type a sentence in the search box, then tap "Choose for me".`;
+  return saved.chat ? `${TICK} It starts when you tap "Choose for me" after a sentence search.` : 'Not downloaded yet. Switch it off and on again, on wifi, to fetch it.';
+}
 // Hand the model what was typed and the activities already found; it says which to put first.
 async function askHelper() {
   if (helper.busy) return;
@@ -305,7 +330,7 @@ function searchResults() {
   let foot = '';
   if (!s.meaning && m.meaning && (sentence || !m.count))
     foot = `<div class="smart"><p><b>Match by meaning too?</b> Then "he loves hiding games" finds more than the exact words. One download of about 30 MB, kept on this phone. Nothing you type leaves the phone.</p><button class="btn" data-act="set" data-key="meaning" data-v="1">Turn it on</button></div>`;
-  else if (s.meaning && smart.state !== 'ready' && smartStatus()) foot = `<p class="small-note">Matching by meaning: ${smartStatus().toLowerCase()}</p>`;
+  else if (s.meaning) foot = `<p class="small-note">${smart.state === 'ready' ? 'Matching by meaning is on.' : smart.state === 'failed' ? 'Matching by meaning could not be downloaded.' : 'Matching by meaning: getting ready…'}</p>`;
   const canChoose = s.chat && sentence && all.length > 1 && helper.state !== 'failed';
   const choose = canChoose
     ? `<button class="btn choose" data-act="helper"${helper.busy ? ' disabled' : ''}>${helper.busy ? (helper.state === 'loading' ? `Starting the helper: ${Math.round(helper.progress * 100)}%` : 'Choosing…') : picked.length ? 'Choose again' : 'Choose for me'}</button>`
@@ -912,6 +937,8 @@ function chatOk() {
 const onOff = (key, on) => `<div class="seg" role="group"><button data-act="set" data-key="${key}" data-v="1" aria-pressed="${on}">On</button><button data-act="set" data-key="${key}" data-v="0" aria-pressed="${!on}">Off</button></div>`;
 function settingsScreen() {
   const s = store.settings();
+  if (s.meaning && smart.state === 'off') startSmart(); // so the line under the switch can say it is working
+  checkSaved();
   const c = store.child();
   return `${topBar('Settings')}
   <section class="page settings">
@@ -927,11 +954,11 @@ function settingsScreen() {
     </div>
     <div class="setting"><h2>Search by sentence</h2>${onOff('meaning', s.meaning)}
       <p>The search box already reads a sentence for the time, the toys, his age and what to leave out. Switched on, it also matches by meaning. One download of about 30 MB, kept on this phone. Nothing you type leaves the phone.</p>
-      <p id="smart-status">${s.meaning ? smartStatus() : ''}</p>
+      <p id="smart-status" class="status">${smartStatus()}</p>
     </div>
     <div class="setting"><h2>Chat helper <b class="trial">Trial</b></h2>${chatOk().ok ? onOff('chat', s.chat) : ''}
       <p>A small AI model that runs on this phone. After a sentence search, "Choose for me" lets it put the best few first. It only chooses: every word about an activity is still the activity's own. About 600 MB to download once, from Hugging Face. For recent Android phones, and not yet tried on a real one.</p>
-      <p id="helper-status">${chatOk().ok ? (s.chat ? helperStatus() : '') : esc(chatOk().why)}</p>
+      <p id="helper-status" class="status">${helperStatus()}</p>
     </div>
     <a class="setting more" href="#/guide"><span><b>About the research</b><span>Keeping it play, what the studies do and do not show, and every source.</span></span>${icon.back}</a>
   </section>`;
@@ -1148,7 +1175,7 @@ function onTap(el, e) {
       if (v === '1') startHelper();
       else {
         Object.assign(helper, { state: 'off', answer: null, key: null });
-        chatMod().then((mod) => mod.removeChat());
+        chatMod().then((mod) => mod.removeChat()).then(checkSaved, checkSaved);
       }
     }
     return draw(true);

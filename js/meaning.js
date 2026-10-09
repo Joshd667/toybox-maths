@@ -142,17 +142,40 @@ export function cosine(a, b) {
 
 // ---- loading it on the phone. Called only when the adult has switched "Understand sentences" on.
 let ready = null;
-export function loadEmbedder(base = new URL('../ai/', import.meta.url).href) {
+// onProgress(fraction from 0 to 1) is called as the model arrives.
+export function loadEmbedder(onProgress = () => {}, base = new URL('../ai/', import.meta.url).href) {
   if (ready) return ready;
   ready = (async () => {
     const ort = await import(base + 'ort/ort.wasm.min.mjs');
     ort.env.wasm.wasmPaths = base + 'ort/';
     ort.env.wasm.numThreads = 1; // GitHub Pages cannot send the headers that threads need
-    const [model, vocab] = await Promise.all([fetch(base + 'minilm/model.onnx').then(ok).then((r) => r.arrayBuffer()), fetch(base + 'minilm/vocab.txt').then(ok).then((r) => r.text())]);
-    return makeEmbedder(ort, new Uint8Array(model), vocab);
+    const [model, vocab] = await Promise.all([fetch(base + 'minilm/model.onnx').then(ok).then((r) => readAll(r, onProgress)), fetch(base + 'minilm/vocab.txt').then(ok).then((r) => r.text())]);
+    return makeEmbedder(ort, model, vocab);
   })();
   ready.catch(() => (ready = null)); // let a later try start again
   return ready;
+}
+// Read a big file piece by piece, so the screen can say how far it has got.
+async function readAll(res, onProgress) {
+  const total = Number(res.headers.get('content-length')) || 0;
+  if (!res.body) return new Uint8Array(await res.arrayBuffer());
+  const parts = [];
+  let got = 0;
+  const reader = res.body.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value);
+    got += value.length;
+    if (total) onProgress(Math.min(1, got / total));
+  }
+  const out = new Uint8Array(got);
+  let at = 0;
+  for (const part of parts) {
+    out.set(part, at);
+    at += part.length;
+  }
+  return out;
 }
 const ok = (r) => {
   if (!r.ok) throw new Error('could not fetch ' + r.url);

@@ -7,7 +7,7 @@
 // When you add a new file to the app, add it to FILES below.
 // tools/validate.mjs checks this list against the repo and fails if they differ.
 
-const CACHE = 'toybox-maths-17';
+const CACHE = 'toybox-maths-18';
 // The big files behind search by sentence and the chat helper (see ai/README.md). They are not in FILES:
 // they are kept the first time they are used, and are not thrown away when the app is updated.
 const AI_CACHE = 'toybox-ai-1';
