@@ -12,6 +12,10 @@ import { ACTIVITIES, STRANDS, TOYS, levelsOf } from '../js/activities/index.js';
 import { REFS } from '../js/research.js';
 import { makeRng } from '../js/rng.js';
 import { render } from '../js/draw.js';
+import crypto from 'node:crypto';
+import { menu, understand, chipsOf, docText, mark } from '../js/ask.js';
+import { VECTORS, MODEL_MARK } from '../js/vectors.js';
+import { choose, readAnswer, schemaFor, buildPrompt, FOLLOW_UPS } from '../js/chat.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Number(process.argv[2]) || 300;
@@ -147,6 +151,78 @@ const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true
 const shipped = ['index.html', 'manifest.webmanifest', ...walk('js'), ...walk('css'), ...walk('icons'), ...walk('fonts')].filter((f) => !f.endsWith('.txt'));
 for (const f of shipped) if (!listed.has(f)) err('sw.js', `"${f}" is not in the FILES list, so it will not work offline`);
 for (const f of listed) if (!fs.existsSync(path.join(root, f))) err('sw.js', `lists "${f}" but that file does not exist`);
+
+// ---------------------------------------------------------------- search by sentence
+// The saved numbers for the meaning search must match the activities and the model they were made with.
+for (const a of ACTIVITIES) {
+  if (!VECTORS[a.id]) err('js/vectors.js', `no entry for "${a.id}". Run: node tools/embed.mjs`);
+  else if (VECTORS[a.id][0] !== mark(docText(a))) err('js/vectors.js', `"${a.id}" has changed since its numbers were made. Run: node tools/embed.mjs`);
+}
+for (const id of Object.keys(VECTORS)) if (!ids.has(id)) err('js/vectors.js', `has an entry for "${id}", which is not an activity. Run: node tools/embed.mjs`);
+const modelFile = path.join(root, 'ai/minilm/model.onnx');
+if (!fs.existsSync(modelFile)) err('ai/', 'ai/minilm/model.onnx is missing');
+else if (crypto.createHash('sha256').update(fs.readFileSync(modelFile)).digest('hex').slice(0, 16) !== MODEL_MARK) err('js/vectors.js', 'the model file has changed since the numbers were made. Run: node tools/embed.mjs');
+for (const f of ['ai/minilm/vocab.txt', 'ai/ort/ort.wasm.min.mjs', 'ai/ort/ort-wasm-simd-threaded.mjs', 'ai/ort/ort-wasm-simd-threaded.wasm', 'ai/webllm/index.js']) if (!fs.existsSync(path.join(root, f))) err('ai/', `${f} is missing`);
+
+// What a sentence should be read as. Each line: the sentence, the labels it should show, activities that must be
+// listed (before any "For later" or "Toy switched off" group), and activities that must not be listed at all.
+const SENTENCES = [
+  ["I need a quick activity. I have duplo, trains and cars. 4. But didn't like the pattern one, loves animals", ['Quick: 3 minutes or less', 'Age 4', 'Have: Duplo', 'Have: Brio trains', 'Have: Cars', 'Likes: Animals', 'Not: Patterns'], ['who-has-more', 'count-wagons'], ['pattern-next', 'copy-duplo', 'quick-look']],
+  ["he's bored of counting and loves trains", ['Likes: Brio trains', 'Not: Counting'], ['copy-track', 'longer-train'], ['count-wagons', 'count-line']],
+  ['he keeps guessing instead of counting properly', ['Counting'], ['count-line', 'spot-mistake'], ['pattern-next']],
+  ['5 minutes with the rabbit', ['Up to 5 minutes', 'Have: Rabbit game'], ['rabbit-copy'], ['count-line']],
+  ["my son is nearly 3 and we've got wooden blocks", ['Age 2½', 'Have: Wooden blocks'], ['tall-as'], ['copy-duplo']],
+  ["she is 3 and a half, doesn't like the feely bag or numicon", ['Age 3½', 'Not: Numicon', 'Not: Feely bag'], ['shape-hunt'], ['feely-bag', 'numicon-match']],
+  ['something for a 3 year old with no toys', ['Age 3', 'No toys needed'], ['quick-look'], ['count-line']],
+  ['anything but patterns', ['Not: Patterns'], ['count-line'], ['pattern-copy']],
+  ['we have three cars and a box', ['Have: Cars'], ['hidden-add'], ['copy-duplo']],
+];
+for (const [q, labels, must, never] of SENTENCES) {
+  const m = menu(q, {});
+  const got = m.chips.map((c) => c.label);
+  if (m.mode !== 'sentence') err('ask.js', `"${q}" was not read as a sentence`);
+  if (labels.join(' | ') !== got.join(' | ')) err('ask.js', `"${q}" was read as [${got.join(' | ')}], expected [${labels.join(' | ')}]`);
+  const main = m.groups.filter((g) => !g.note).flatMap((g) => g.acts.map((r) => r.a.id));
+  const every = m.groups.flatMap((g) => g.acts.map((r) => r.a.id));
+  for (const id of must) if (!main.includes(id)) err('ask.js', `"${q}" should list ${id}`);
+  for (const id of never) if (every.includes(id)) err('ask.js', `"${q}" should not list ${id}`);
+}
+// Plain words must still be looked up as they always were, with no labels.
+for (const [q, first] of [['duplo', 'count-line'], ['taller', 'taller-tower'], ['train track', 'copy-track'], ['one more', 'one-more']]) {
+  const m = menu(q, {});
+  if (m.mode !== 'words' || m.chips.length || m.groups[0]?.acts[0]?.a.id !== first) err('ask.js', `the plain search for "${q}" should start with ${first}`);
+}
+// Tapping a label away must undo it.
+{
+  const q = 'quick, no patterns';
+  const all = menu(q, { drop: new Set(['time', 'no:patterns']) });
+  if (all.count !== ACTIVITIES.length) err('ask.js', 'tapping every label away should bring every activity back');
+}
+// Nothing typed may ever produce an activity that does not exist, or the same one twice.
+for (const q of ['', '   ', '4', 'no', 'not', '?!', 'dinosaurs', "he's 9", 'x'.repeat(500), 'quick quick quick 1 minute', 'I have no duplo and no trains and no cars']) {
+  const list = menu(q, {}).groups.flatMap((g) => g.acts.map((r) => r.a.id));
+  if (new Set(list).size !== list.length) err('ask.js', `"${q.slice(0, 20)}" lists an activity twice`);
+  if (list.some((id) => !ids.has(id))) err('ask.js', `"${q.slice(0, 20)}" lists something that is not an activity`);
+}
+if (chipsOf(understand('hello there')).length) err('ask.js', 'a sentence with nothing in it should show no labels');
+
+// ---------------------------------------------------------------- the chat helper
+// The model may only ever name the activities it was given. Whatever it says, nothing else gets through.
+{
+  const cands = ACTIVITIES.slice(0, 5).map((a) => ({ a, strand: STRANDS.find((s) => s.id === a.strand).name, toys: a.toys }));
+  const fake = (text) => ({ resetChat: async () => {}, chat: { completions: { create: async (req) => ((fake.req = req), { choices: [{ message: { content: text } }] }) } } });
+  const good = await choose('quick one with cars', cands, fake('{"picks":["a2","a1","a2"],"ask":"time"}'));
+  if (!good || good.picks.join() !== `${cands[1].a.id},${cands[0].a.id}` || good.ask !== 'time') err('chat.js', 'a well-formed answer was not read correctly');
+  if (fake.req.response_format?.type !== 'json_object' || !fake.req.response_format.schema) err('chat.js', 'the answer must be locked to the schema');
+  const allowed = JSON.parse(schemaFor(5)).properties;
+  if (allowed.picks.items.enum.join() !== 'a1,a2,a3,a4,a5' || allowed.ask.enum.join() !== FOLLOW_UPS.join()) err('chat.js', 'the schema must allow only the keys given and the set questions');
+  for (const bad of ['', 'This is proven to boost maths.', '{"picks":["a9","zz","count-line"],"ask":"none"}', '{"picks":"a1"}', '{"picks":[],"ask":"toys"}', '[1,2]'])
+    if (readAnswer(bad, cands) !== null) err('chat.js', `a bad answer got through: ${bad}`);
+  const odd = readAnswer('{"picks":["a1","a7"],"ask":"buy this","note":"proven"}', cands);
+  if (!odd || odd.picks.length !== 1 || odd.ask !== null || Object.keys(odd).join() !== 'picks,ask') err('chat.js', 'extra or unknown parts of an answer must be dropped');
+  const prompt = buildPrompt('he said "hi"', cands);
+  if (/undefined|NaN/.test(prompt) || !prompt.includes(cands[4].a.title)) err('chat.js', 'the prompt is malformed');
+}
 
 const perStrand = STRANDS.map((s) => `${s.name} ${ACTIVITIES.filter((a) => a.strand === s.id).length}`).join(', ');
 console.log(`${ACTIVITIES.length} activities (${perStrand})`);

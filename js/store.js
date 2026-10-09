@@ -12,7 +12,8 @@ const fresh = () => ({
   current: null, // id of the child who is playing
   children: [], // see newChild() below
   // questions / goes: how many were chosen last time, offered again next time
-  settings: { theme: 'system', sound: true, motion: true, questions: 5, goes: 1, toys: TOYS.map((t) => t.id) },
+  // meaning: match searches by meaning (a 30 MB download). chat: the chat helper (a 600 MB download). Both start off.
+  settings: { theme: 'system', sound: true, motion: true, questions: 5, goes: 1, toys: TOYS.map((t) => t.id), meaning: false, chat: false },
 });
 const newChild = (name, animal, pronoun, born) => ({
   id: 'c' + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36),
@@ -185,7 +186,7 @@ const DAY = 86400000;
 const dayOf = (t) => Math.floor((t - new Date().getTimezoneOffset() * 60000) / DAY);
 
 // How keen the picker is on each activity.
-function weight(a) {
+export function weight(a) {
   const last = actState(a.id).last;
   if (!last) return 3; // never tried: most interesting
   let w = { right: 2, easy: 1, hard: 0.6, skip: 1 }[last.rating] ?? 1;

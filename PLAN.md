@@ -36,6 +36,34 @@ Kept per child, on the phone. `CLAUDE.md` has the rules. Left out on purpose, to
 - Making "Just pick one" lean towards favourites.
 - Remembering which toy and difficulty a favourite was played with (it opens as any activity does, on the suggested difficulty).
 
+## Search by sentence and the chat helper (October 2026)
+
+The owner asked for a chat with an on-device AI that knows the activities and the research, using WebLLM and Gemma E2B or E4B.
+What the research found, and what was built instead:
+
+| Question | Finding | Limit of the evidence |
+|---|---|---|
+| Gemma E2B / E4B in WebLLM | Not in its model list. Its only small Gemma is Gemma 3 1B (about 600 MB). | Read from the list in WebLLM 0.2.85. |
+| Gemma 4 E2B in a browser | Only through Google's LiteRT-LM JS (early preview) or MediaPipe (maintenance only). 2.0 GB download; a maintainer says about 4 GB of free RAM and "won't work on iOS". | Maintainer comment, LiteRT-LM issue 2368. |
+| iPhones | In one test (Nearform, 8 October 2026, iPhone 15 Pro) nothing over about 400 MB survived, and models that small gave wrong answers. | One phone; several other reports agree. |
+| Android | Gemma 4 E2B reported working on Pixel 8 Pro and Pixel 9. WebLLM 0.2.80 and later fails on some Qualcomm (Adreno) phones (issue 836, open). | User reports; no speed figures for any phone browser. |
+| Can a small model be trusted to write about research | No. Small models add unsupported claims in a few percent to over 20% of grounded answers, depending on the benchmark (Vectara leaderboard; arXiv 2603.11513). | No score exists for Gemma 4 E2B/E4B. |
+
+Built: all three layers described in `CLAUDE.md` under "Asking in a sentence". The model only ever chooses; it never writes.
+
+What the meaning model adds here is modest. On 60 activities the rules do most of the work; meaning matching adds phrases that
+share no word with an activity ("hide and seek" finds the hiding games) and better ordering. Expect it to matter more as the list grows.
+
+Still open for this:
+
+- **The chat helper has not been run on a real phone.** Its flow was tested with a stand-in model, and the real library was only
+  seen to fail cleanly where it had no network. Try it on the owner's phone: does it download, start, and choose sensibly?
+  If it fails on a Qualcomm phone, that is the known WebLLM bug; there is no older version to fall back to that has Gemma 3 1B.
+- **Meaning search has not been run on an iPhone.** It ran in desktop Chromium (ready in under 2 seconds from this site, about 25 ms a sentence).
+- Which phones the family uses was asked and not yet answered.
+- Revisit Gemma 4 E2B when LiteRT-LM JS leaves preview and documents locked (schema) output.
+- If the list reaches the hundreds, check `NEAR` and the sentences in the validator again.
+
 ## Still to do
 
 1. **Activities for 1- to 2-year-olds.** The owner said "later". Sources are already in `research.js`
