@@ -4,6 +4,7 @@
 //   #/                 home: choose a toy (or a skill)
 //   #/toy/<id>         activities for one toy          #/skill/<id>   activities for one skill
 //   #/play/<id>/<toy>  an activity (get ready -> set up -> questions -> finish)
+//   #/favourites       the current child's favourite activities (hearts are on every list row and Get ready screen)
 //   #/progress         #/settings      #/guide (About the research, opened from Settings)      #/who  (the children)
 // The very first time, a welcome is shown instead (welcome() below), whatever the address.
 // All taps are handled in one place near the bottom (onTap).
@@ -90,9 +91,18 @@ const icon = {
   dots: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="5" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="19" r="2" fill="currentColor"/></svg>',
   book: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6c-2-1.6-5-2-8-1.5v13c3-.5 6-.1 8 1.5 2-1.6 5-2 8-1.5v-13c-3-.5-6-.1-8 1.5ZM12 6v13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   lock: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="10.5" width="14" height="10" rx="3" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  heart: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20.3C7.6 17.2 4 13.9 4 10.1A4.1 4.1 0 0 1 12 8a4.1 4.1 0 0 1 8 2.1c0 3.8-3.6 7.1-8 10.2Z" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg>',
   tips: '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/><circle cx="12" cy="7.4" r="1.5" fill="currentColor"/></svg>',
   star: (on, now) => `<svg class="star${on ? ' on' : ''}${now ? ' now' : ''}" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1.8l3.1 6.5 7.1.9-5.2 4.9 1.3 7.1L12 17.8 5.7 21.2 7 14.1 1.8 9.2l7.1-.9z"/></svg>`,
 };
+
+// The heart that makes an activity a favourite of the child who is playing. `word` adds a label beside it.
+// A tap is handled in onTap ('fav'), which updates every heart for that activity on the screen without redrawing.
+const FAV_WORD = (on) => (on ? 'In favourites' : 'Add to favourites');
+function heart(id, word) {
+  const on = store.isFav(id);
+  return `<button class="${word ? 'btn fav-btn' : 'heart'}" data-act="fav" data-id="${id}" aria-pressed="${on}" aria-label="${on ? 'Remove from favourites' : 'Add to favourites'}">${icon.heart}${word ? `<span class="fav-word">${FAV_WORD(on)}</span>` : ''}</button>`;
+}
 
 // The app's name with its toy box, for the top of the home screen.
 const BRAND = `<h1 class="brand" aria-label="Toybox Maths">${logo()}<span>Toybox</span> <b>Maths</b></h1>`;
@@ -132,13 +142,15 @@ function home() {
   </section>`;
 }
 
-// ---------------------------------------------------------------- a list of activities (one toy, or one skill)
+// ---------------------------------------------------------------- a list of activities (one toy, one skill, or the favourites)
 let listFilter = null; // the chip that is switched on, if any
 function list(kind, id) {
   const isToy = kind === 'toy';
-  const all = isToy ? forToy(id) : forSkill(id);
-  const title = isToy ? toyName(id) : STRANDS.find((s) => s.id === id)?.name;
+  const isFav = kind === 'fav';
+  const all = isFav ? store.favs().map((f) => byId[f]) : isToy ? forToy(id) : forSkill(id);
+  const title = isFav ? 'Favourites' : isToy ? toyName(id) : STRANDS.find((s) => s.id === id)?.name;
   if (!title) return null;
+  if (isFav && !all.length) return noFavs();
   // Chips filter by the other thing: skills when looking at a toy, toys when looking at a skill.
   const chips = isToy
     ? STRANDS.filter((s) => all.some((a) => a.strand === s.id)).map((s) => ({ id: s.id, name: s.name, colour: s.colour }))
@@ -151,20 +163,27 @@ function list(kind, id) {
     const last = store.actState(a.id).last;
     return `<li><a href="#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}" data-id="${a.id}" style="--c:${s.colour}">
       <span class="li-title">${esc(a.title)}</span>
-      <span class="li-meta">${agePill(a)}${isToy ? esc(s.name) + ': ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
+      <span class="li-meta">${agePill(a)}${isToy ? esc(s.name) + ': ' : isFav ? esc(s.name) + ', ' : ''}${esc(isToy ? a.skill.toLowerCase() : a.minutes + ' min')}</span>
       ${last ? `<span class="badge r-${last.rating}">${RATING_WORD[last.rating]}</span>` : '<span class="badge r-new">New</span>'}
-    </a></li>`;
+    </a>${heart(a.id)}</li>`;
   };
   // Looking at one skill: group the activities under its sub-skills.
   // Activities aimed at older children than this one stay on the page, in a group of their own at the end.
-  const now = shown.filter((a) => !store.later(a));
-  const older = shown.filter((a) => store.later(a)).sort((a, b) => a.age - b.age);
-  const groups = (isToy ? [['', now]] : subSkills(id).map((k) => [k, now.filter((a) => a.skill === k)])).filter(([, acts]) => acts.length);
+  // Favourites are one list, the newest first, and are never moved to "For later": the adult chose them on purpose.
+  // One whose toys are all switched off in Settings stays on the page, in a group of its own, so it is not lost.
+  const now = shown.filter((a) => (isFav ? store.playable(a) : !store.later(a)));
+  const older = isFav ? [] : shown.filter((a) => store.later(a)).sort((a, b) => a.age - b.age);
+  const off = isFav ? shown.filter((a) => !store.playable(a)) : [];
+  const groups = (isToy || isFav ? [['', now]] : subSkills(id).map((k) => [k, now.filter((a) => a.skill === k)])).filter(([, acts]) => acts.length);
   if (older.length) groups.push(['For later', older, `Aimed at children older than about ${ageWord(store.ageOf())}. Still fine to try: one that goes well moves up the list.`]);
-  return `${topBar(title, '#/')}
+  if (off.length) groups.push(['Toy switched off', off, 'These need a toy that is unticked in Settings. Tick it there to bring them back.']);
+  // With only a few favourites the toy chips are clutter; they earn their place once the list is long enough to scroll.
+  const showChips = !isFav || (all.length > 5 && chips.length > 1);
+  return `${isFav ? topBar(title) : topBar(title, '#/')}
   <section class="page">
-    <button class="go small" data-act="pick-here">${icon.dice}<span>Pick one of these</span></button>
-    <div class="chips" role="group" aria-label="Filter">
+    ${isFav ? `<p class="lede fav-lede">${esc(store.child().name)}'s favourites. Tap a heart to take one off.</p>` : ''}
+    ${!isFav || now.length > 1 ? `<button class="go small" data-act="pick-here">${icon.dice}<span>${isFav ? 'Pick a favourite' : 'Pick one of these'}</span></button>` : ''}
+    <div class="chips" role="group" aria-label="Filter"${showChips ? '' : ' hidden'}>
       <button class="chip" data-act="filter" data-v="" aria-pressed="${!listFilter}">All</button>
       ${chips.map((c) => `<button class="chip${c.colour ? ' tint' : ' with-pic'}" ${c.colour ? `style="--c:${c.colour}"` : ''} data-act="filter" data-v="${c.id}" aria-pressed="${listFilter === c.id}">${c.colour ? '' : `<span class="chip-pic">${pic(toyArt[c.id]())}</span>`}${esc(c.name)}</button>`).join('')}
     </div>
@@ -172,6 +191,19 @@ function list(kind, id) {
   </section>`;
 }
 const shownIds = () => [...document.querySelectorAll('.list a')].map((el) => el.dataset.id);
+// The Favourites tab before anything has a heart: say what it is for and how to fill it.
+function noFavs() {
+  return `${topBar('Favourites')}
+  <section class="page">
+    <div class="empty fav-empty">
+      <span class="fav-big">${icon.heart}</span>
+      <p class="say">No favourites yet</p>
+      <p>Tap the heart beside any activity to keep it here for ${esc(store.child().name)}. You can also add one when a game has just gone well.</p>
+      <a class="btn primary big wide" href="#/">Find an activity</a>
+    </div>
+    <p class="small-note">Each child has their own favourites. They stay on this phone.</p>
+  </section>`;
+}
 
 // ---------------------------------------------------------------- playing an activity
 // A turn goes: Get ready (what you need, how hard, how many) -> Start -> set-up -> questions -> done.
@@ -260,6 +292,7 @@ function playTop() {
   return `<header class="top play-top">
     <a class="round" href="${from}" aria-label="Close">${icon.close}</a>
     <h1>${going ? `${isBuild(flow.a) ? 'Go' : 'Question'} ${flow.q + 1} of ${flow.n}` : esc(flow.a.title)}</h1>
+    ${going ? '' : heart(flow.a.id)}
     <button class="round" data-act="tips" aria-label="Tips and why">${icon.tips}</button>
     ${going ? track() : ''}
   </header>`;
@@ -731,6 +764,7 @@ function screen() {
     const html = list(page, a);
     if (html) return { html, tab: 'home' };
   }
+  if (page === 'favourites') return { html: list('fav'), tab: 'fav' };
   if (page === 'progress') return { html: progress(), tab: 'progress' };
   if (page === 'guide') return { html: guide(), tab: 'settings' };
   if (page === 'settings') return { html: settingsScreen(), tab: 'settings' };
@@ -781,10 +815,30 @@ function onTap(el, e) {
     return go('#/play/' + a.id);
   }
   if (act === 'pick-here') {
-    const ids = shownIds();
-    const a = store.pick(ACTIVITIES.filter((x) => ids.includes(x.id)));
+    // On the Favourites screen a heart that has just been tapped off leaves its row in place: do not pick that one.
+    const favPage = parts()[0] === 'favourites';
+    const ids = shownIds().filter((id) => !favPage || store.isFav(id));
+    const a = store.pick(ACTIVITIES.filter((x) => ids.includes(x.id)), null, favPage);
     const toy = parts()[0] === 'toy' ? parts()[1] : '';
     return a && go(`#/play/${a.id}${toy && toy !== 'none' ? '/' + toy : ''}`);
+  }
+
+  if (act === 'fav') {
+    // Change every heart for this activity where it stands. Nothing is redrawn, so the page does not jump,
+    // and on the Favourites screen the row stays put until you leave: a slip of the thumb is one more tap to undo.
+    const on = store.toggleFav(el.dataset.id);
+    document.querySelectorAll(`[data-act="fav"][data-id="${el.dataset.id}"]`).forEach((b) => {
+      b.setAttribute('aria-pressed', on);
+      b.setAttribute('aria-label', on ? 'Remove from favourites' : 'Add to favourites');
+      const word = b.querySelector('.fav-word');
+      if (word) word.textContent = FAV_WORD(on);
+    });
+    if (on) {
+      el.classList.remove('beat');
+      void el.offsetWidth; // restart the little animation
+      el.classList.add('beat');
+    }
+    return;
   }
 
   // ----- who is playing
@@ -970,7 +1024,7 @@ function onTap(el, e) {
     const moved = nextMode !== flow.mode ? `Next time this opens on ${MODE[nextMode]}.` : '';
     const box = document.getElementById('after');
     box.hidden = false;
-    box.innerHTML = `${moved ? `<p class="moved">${moved}</p>` : ''}<div class="after-btns"><a class="btn primary big" href="${from}">Done</a><button class="btn" data-act="again">Same again</button><button class="btn" data-act="surprise">${icon.dice} Another</button></div>`;
+    box.innerHTML = `${moved ? `<p class="moved">${moved}</p>` : ''}${heart(flow.a.id, true)}<div class="after-btns"><a class="btn primary big" href="${from}">Done</a><button class="btn" data-act="again">Same again</button><button class="btn" data-act="surprise">${icon.dice} Another</button></div>`;
     box.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     return;
   }

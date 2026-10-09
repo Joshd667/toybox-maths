@@ -2,7 +2,7 @@
 // Everything is kept in this phone's browser storage. Nothing is sent anywhere,
 // including the children's names.
 
-import { ACTIVITIES, TOYS } from './activities/index.js';
+import { ACTIVITIES, TOYS, byId } from './activities/index.js';
 
 const KEY = 'toybox-maths-v2';
 const fresh = () => ({
@@ -21,6 +21,7 @@ const newChild = (name, animal, pronoun, born) => ({
   pronoun, // 'he' or 'she': how the activity text talks about them
   born: born || null, // 'YYYY-MM' (month of birth), or null if the adult left it out. Used only to work out an age.
   stars: 0, // every star ever earned
+  favs: [], // ids of this child's favourite activities, the newest first
   acts: {}, // activity id -> { n: times played, last: { t, rating, mode } }
   log: [], // most recent first: { id, t, rating, mode, stars, asked }
   // mode is '1', '2' or '3' (Easy, Medium, Hard), 'mix' or 'ramp'. Records from before October 2026 have a number, `level`, instead.
@@ -35,6 +36,7 @@ try {
     // Families who were using the app before the welcome existed have already set it up.
     if (saved.welcomed === undefined) state.welcomed = state.children.length > 0;
     for (const c of state.children) if (c.pronoun !== 'she') c.pronoun = 'he'; // "they" was removed
+    for (const c of state.children) if (!Array.isArray(c.favs)) c.favs = []; // children saved before favourites existed
   }
 } catch {
   /* private mode or storage blocked: carry on without saving */
@@ -93,6 +95,22 @@ export function setPronoun(pronoun) {
 export function setBorn(born) {
   child().born = /^\d{4}-\d{2}$/.test(born || '') ? born : null;
   save();
+}
+
+// ---------------------------------------------------------------- favourites (for the current child)
+// Each child has their own list, because what suits a four-year-old is not what suits a two-year-old.
+// An id that is no longer in the pack is skipped when read, never deleted.
+export const favs = () => (child()?.favs || []).filter((id) => byId[id]);
+export const isFav = (id) => !!child()?.favs?.includes(id);
+// Add or remove one. Returns true if it is now a favourite.
+export function toggleFav(id) {
+  const c = child();
+  if (!c || !byId[id]) return false;
+  const i = c.favs.indexOf(id);
+  if (i >= 0) c.favs.splice(i, 1);
+  else c.favs.unshift(id);
+  save();
+  return i < 0;
 }
 
 // ---------------------------------------------------------------- age
@@ -176,11 +194,12 @@ function weight(a) {
 }
 
 // Choose one activity from a list (default: all of them). `not` is an id to avoid.
-export function pick(pool = ACTIVITIES, not = null) {
+// `anyAge` keeps the ones meant for older children in: used for favourites, which the adult chose on purpose.
+export function pick(pool = ACTIVITIES, not = null, anyAge = false) {
   const can = pool.filter((a) => a.id !== not && playable(a));
   if (!can.length) return pool[0] || null;
   // Leave out the ones meant for older children, unless that is all there is to choose from.
-  const now = can.filter((a) => !later(a));
+  const now = anyAge ? can : can.filter((a) => !later(a));
   const list = now.length ? now : can;
   const total = list.reduce((s, a) => s + weight(a), 0);
   let x = Math.random() * total;

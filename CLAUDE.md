@@ -10,10 +10,10 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 
 | File | What it is |
 |---|---|
-| `index.html` | The one page. Three bottom tabs (Play, Progress, Settings) and an empty `<main>`. |
+| `index.html` | The one page. Four bottom tabs (Play, Favourites, Progress, Settings) and an empty `<main>`. |
 | `css/app.css` | All styling. Colours and fonts are variables at the top. |
 | `js/app.js` | The screens and all tap handling. Routes are listed at the top of the file. |
-| `js/store.js` | Children's profiles and progress (saved on the phone), and how the next activity is chosen. |
+| `js/store.js` | Children's profiles, favourites and progress (saved on the phone), and how the next activity is chosen. |
 | `js/reward.js` | Stars, the dancing animal and the chime when he gets one right. Picks which of the three dances plays. |
 | `js/wording.js` | Rewrites "he" text as "she" for a child's profile. |
 | `js/draw.js` | Every picture. Toy "sprites" plus layout helpers. Pure functions, no DOM. |
@@ -198,6 +198,26 @@ one harder after "too easy", one easier after "too tricky", otherwise the same. 
 never tried, then "just right" ones, and avoids repeats on the same day.
 Saved in `localStorage` under `toybox-maths-v2`. Older records have a numeric `level` where newer ones have `mode`; both are read.
 If the saved shape changes again, bump the key or migrate.
+
+## Favourites
+
+The owner asked for a way to favourite activities and a menu to find them. A heart marks one; the Favourites tab lists them.
+
+- **Per child.** `favs` on the child's record is a list of activity ids, the newest first. `store.favs()`, `isFav()`, `toggleFav()`.
+  Records saved before favourites existed are given an empty list when loaded, so the storage key did not change.
+- **Where the heart is:** at the end of every row in every list, beside the "i" on the Get ready screen, and as a button
+  ("Add to favourites") on the finish screen once the adult has rated the turn. It is not shown while questions are being asked:
+  that screen is the child's.
+- **A heart, not a star.** Gold stars are what he earns. Do not reuse them for this.
+- **A tap changes the heart where it stands** (`onTap`, 'fav'). Nothing is redrawn. On the Favourites screen the row stays until
+  you leave, so a slip is one tap to undo; "Pick a favourite" skips a row whose heart has just been taken off.
+- **The Favourites screen** is `list('fav')`: the same rows as the other lists, one flat list, with "Pick a favourite" at the top
+  when there are two or more. Toy chips appear once there are more than five. With none, it says how to add one.
+- Favourites are never moved to "For later", and "Pick a favourite" does not leave out ones aimed at older children
+  (`pick(pool, not, anyAge)`): the adult chose them on purpose. One whose toys are all unticked in Settings is kept,
+  in a "Toy switched off" group.
+- "Just pick one" on the home screen takes no notice of favourites. It is for finding something new.
+- In a list row the line under the title now runs the full width, under the badge, to make room for the heart.
 
 ## Publishing
 

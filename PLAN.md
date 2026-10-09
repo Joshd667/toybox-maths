@@ -25,6 +25,16 @@ The owner asked for a review against the research for ages 1 to 4. What it found
 
 Montessori: recorded in `NOT_CLAIMED` and in `CLAUDE.md`. Ideas borrowed, no claim made.
 
+## Favourites (October 2026)
+
+Built: a heart on every list row, on Get ready and on the finish screen; a Favourites tab with "Pick a favourite".
+Kept per child, on the phone. `CLAUDE.md` has the rules. Left out on purpose, to add only if asked:
+
+- Putting favourites in an order by hand (they are listed newest first).
+- Showing favourites on the Progress dots.
+- Making "Just pick one" lean towards favourites.
+- Remembering which toy and difficulty a favourite was played with (it opens as any activity does, on the suggested difficulty).
+
 ## Still to do
 
 1. **Activities for 1- to 2-year-olds.** The owner said "later". Sources are already in `research.js`

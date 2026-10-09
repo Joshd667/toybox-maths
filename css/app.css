@@ -20,6 +20,7 @@
   --right: #2e9e4b;
   --hard: #d96a12;
   --skip: #8a879c;
+  --fav: #d8336f;           /* a favourite's heart. Not gold: gold stars are what he earns */
   --c: var(--accent);        /* each skill sets its own colour on its own rows */
   --display: 'Fredoka', ui-rounded, system-ui, sans-serif;
   --body: 'Atkinson', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -31,13 +32,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --bg: #14122a; --surface: #211e3d; --ink: #f1effb; --muted: #aca7c9; --line: #3a365c; --mat: #e6ebf1;
-    --accent: #8f84ff; --accent-ink: #14122a; --ok: #5fd083; --no: #ff8f86;
+    --accent: #8f84ff; --accent-ink: #14122a; --ok: #5fd083; --no: #ff8f86; --fav: #ff7aa8;
     color-scheme: dark;
   }
 }
 :root[data-theme='dark'] {
   --bg: #14122a; --surface: #211e3d; --ink: #f1effb; --muted: #aca7c9; --line: #3a365c; --mat: #e6ebf1;
-  --accent: #8f84ff; --accent-ink: #14122a; --ok: #5fd083; --no: #ff8f86;
+  --accent: #8f84ff; --accent-ink: #14122a; --ok: #5fd083; --no: #ff8f86; --fav: #ff7aa8;
   color-scheme: dark;
 }
 :root[data-theme='light'] { color-scheme: light; }
@@ -178,12 +179,38 @@ button { cursor: pointer; touch-action: manipulation; }
   padding: 13px 14px 13px 20px; min-height: 64px; background: var(--surface); border-radius: 16px; text-decoration: none;
 }
 .li-title { font-family: var(--display); font-weight: 500; font-size: 19px; line-height: 1.2; }
-.li-meta { grid-column: 1; margin-top: 4px; font-size: 14px; color: var(--muted); }
-.list .badge { grid-column: 2; grid-row: 1 / span 2; }
+.li-meta { grid-column: 1 / -1; margin-top: 4px; font-size: 14px; color: var(--muted); }
+.list .badge { grid-column: 2; grid-row: 1; } /* the line under the title runs the full width, below the badge */
 .age { display: inline-block; margin-right: 8px; padding: 1px 9px; border-radius: 999px; border: 1.5px solid var(--ink); color: var(--ink); font-size: 13px; font-weight: 700; white-space: nowrap; }
 .tagline .age { margin: 0; font-size: 14px; padding: 2px 11px; }
 .group-note { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
 .list.later a { background: none; border: 2px dashed var(--line); }
+
+/* ------------------------------------------------------------ favourites */
+/* the heart: an outline until tapped, then filled. One sits at the end of every list row and on the Get ready screen */
+.list li { display: flex; align-items: stretch; gap: 6px; }
+.list li > a { flex: 1; min-width: 0; }
+.heart {
+  width: 44px; min-height: 48px; flex: none; display: grid; place-items: center; padding: 0;
+  border: 0; border-radius: 16px; background: var(--surface); color: var(--muted);
+}
+.heart .ico { width: 24px; height: 24px; }
+.heart path, .fav-btn path, .fav-big path { fill: none; }
+.heart[aria-pressed='true'], .fav-btn[aria-pressed='true'] .ico { color: var(--fav); }
+.heart[aria-pressed='true'] path, .fav-btn[aria-pressed='true'] path { fill: currentColor; }
+.list.later .heart { background: none; border: 2px dashed var(--line); }
+.top .heart { width: 44px; min-height: 44px; border-radius: 50%; }
+.beat .ico { animation: beat 0.45s cubic-bezier(0.2, 1.8, 0.4, 1); }
+@keyframes beat { from { transform: scale(0.5); } to { transform: none; } }
+body.calm .beat .ico { animation: none; }
+.fav-btn { width: 100%; margin-top: 16px; }
+.fav-lede { margin: 4px 0 14px; }
+.fav-empty { display: grid; justify-items: center; gap: 6px; text-align: center; padding: 28px 18px 18px; margin-top: 8px; }
+.fav-empty .say { color: var(--ink); margin: 0; }
+.fav-empty p { margin: 0 0 12px; text-wrap: balance; }
+.fav-big { width: 72px; height: 72px; display: grid; place-items: center; border-radius: 50%; background: color-mix(in srgb, var(--fav) 14%, var(--surface)); color: var(--fav); }
+.fav-big .ico { width: 38px; height: 38px; }
+.small-note { font-size: 14px; color: var(--muted); text-align: center; margin: 14px 0 0; }
 
 /* ------------------------------------------------------------ playing */
 .play-top { flex-wrap: wrap; row-gap: 10px; }
@@ -429,7 +456,7 @@ button { cursor: pointer; touch-action: manipulation; }
   100% { transform: translate(var(--dx), calc(var(--dy) + 90px)) scale(1) rotate(var(--turn)); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .star.pop, .spin-face.landed { animation: none; }
+  .star.pop, .spin-face.landed, .beat .ico { animation: none; }
   * { scroll-behavior: auto !important; }
 }
 
@@ -577,7 +604,7 @@ body.calm .star.pop, body.calm .spin-face.landed { animation: none; }
 /* ------------------------------------------------------------ bottom tabs */
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: var(--surface); border-top: 2px solid var(--line);
   padding-bottom: env(safe-area-inset-bottom);
 }
