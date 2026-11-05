@@ -61,6 +61,17 @@ Built, tried by the owner, and removed the same day at his request:
 The code for both is in the git history (commits `32160c3` and `673134c`). Worth looking at again only if the list reaches the
 hundreds, or when a small model can be shown to run on the family's phones. Which phones those are was asked and not answered.
 
+## Sticker dice (November 2026)
+
+The owner asked for a simple colour dice for his sticker sheets (dots inside pictures, round coloured stickers), "not as
+complicated as the other ones". Built as its own screen, `#/stickers`, outside the activity flow: Roll gives 1, 3 or 5 of ten
+colours, shown as solid circles with their names; a tap ticks one off, and all ticked makes his animal dance.
+No source supports it as maths, so it makes no claim and has a line in `NOT_CLAIMED`.
+
+Ideas offered to the owner, not built: a number with the colour ("3 red", which would rest on the counting-out research);
+switching off a colour that has run out; a repeating colour pattern (red, blue, red, blue) for later, since we found no
+pattern study under 4.
+
 ## Still to do
 
 1. **Activities for 1- to 2-year-olds.** The owner said "later". Sources are already in `research.js`

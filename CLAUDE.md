@@ -1,6 +1,6 @@
 # Toybox Maths: notes for whoever works on this next (human or AI)
 
-A phone web app (PWA) of early maths activities for one family: a parent and young children, the eldest about three.
+A phone web app (PWA) of early maths activities (and a sticker dice) for one family: a parent and young children, the eldest about three.
 `PLAN.md` says what was reviewed in October 2026, what was built from it, and what is still to do (activities for 1- to 2-year-olds).
 Plain HTML, CSS and JavaScript modules. **No framework, no build step, no dependencies.** Keep it that way.
 
@@ -21,6 +21,7 @@ Live site: GitHub Pages, served from the `main` branch root. Pushing to `main` p
 | `js/brand.js` | The toy box logo: the home-screen icon and the small logo beside the app's name. |
 | `js/rng.js` | Seeded random numbers, so every variation can be reproduced and tested. |
 | `js/research.js` | Every source cited, with what it found and what it does not show. |
+| `js/stickers.js` | The sticker dice's colours and rolls (no DOM, so the validator tests it). The screen is `stickerScreen()` in `app.js`. |
 | `js/ask.js` | Search. Looks up plain words, reads a sentence for time, toys, age and what to leave out, and builds the list. Plain code, no AI model. No DOM, so the validator tests it. |
 | `js/activities/index.js` | List of strands, toys, and all activities. |
 | `js/activities/kit.js` | One import for activity files: all of `draw.js` plus small helpers. |
@@ -221,6 +222,19 @@ The owner asked for a way to favourite activities and a menu to find them. A hea
   in a "Toy switched off" group.
 - "Just pick one" on the home screen takes no notice of favourites. It is for finding something new.
 - In a list row the line under the title runs the full width, under the badge, to make room for the heart.
+
+## The sticker dice
+
+The owner asked for this in November 2026 and asked for it to be simple, unlike the activities. He has printed sheets of dots
+inside pictures and packs of round coloured stickers; the dice says which colour goes on next.
+
+- `#/stickers`, reached from a "Stickers" tile (By toy) and a "Sticker dice" card (By skill) at the end of the home screen.
+  It is not an activity and not in `TOYS`: no Get ready, set-ups, questions, stars, ratings or progress. Do not fold it into that flow.
+- Three choices: 1 colour, 3 colours, 5 colours in a row to copy in order. The choice is saved as `settings.stickers`.
+- Ten colours, exactly as the owner listed them: red, orange, yellow, green, dark blue, purple, pink, brown, white, black.
+  A roll uses different colours; one colour never comes up twice running.
+- A tap on a colour ticks it off once he has stuck it on. When all are ticked, his animal dances (`celebrate`).
+- It makes no research claim. `NOT_CLAIMED` says so, and so does a line on the screen.
 
 ## Search
 

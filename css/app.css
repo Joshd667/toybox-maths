@@ -644,3 +644,37 @@ body.calm .star.pop, body.calm .spin-face.landed { animation: none; }
 }
 .tabs svg { width: 26px; height: 26px; }
 .tabs a[aria-current='page'] { color: var(--accent); }
+
+/* ------------------------------------------------------------ the sticker dice (#/stickers) */
+.sticker-card { grid-template-columns: 1fr auto; }
+.sticker-card .skill-name, .sticker-card .skill-blurb { grid-column: 1; }
+.sticker-card-pic { grid-column: 2; grid-row: 1 / span 2; align-self: center; }
+.dice-say { min-height: 3em; margin: 4px 0 12px; text-align: center; font-family: var(--display); font-weight: 500; font-size: 21px; line-height: 1.3; }
+.dice-say b { display: block; font-weight: 600; }
+.dice-mat {
+  display: flex; justify-content: center; align-items: flex-start; gap: 10px;
+  padding: 26px 10px 18px; border-radius: 24px; background: var(--mat); color: #211d3d;
+}
+.sticker { flex: 0 1 var(--d); display: grid; justify-items: center; gap: 8px; padding: 0; border: 0; background: none; font: inherit; color: inherit; min-width: 0; }
+.dice-mat.n1 { --d: 190px; }
+.dice-mat.n3 { --d: 96px; }
+.dice-mat.n5 { --d: 62px; gap: 6px; }
+.sticker-dot {
+  width: var(--d); max-width: 100%; aspect-ratio: 1; border-radius: 50%;
+  background: var(--s, #fff); color: var(--t, #211d3d);
+  box-shadow: inset 0 0 0 2px rgba(0, 0, 0, 0.22), 0 3px 0 rgba(0, 0, 0, 0.12);
+  display: grid; place-items: center; transition: transform 0.15s;
+}
+.sticker-dot svg { width: 55%; height: 55%; }
+.sticker.blank .sticker-dot { background: none; box-shadow: inset 0 0 0 3px #b9b6cc; color: #8a879c; font-family: var(--display); font-weight: 600; font-size: calc(var(--d) * 0.4); }
+.sticker-name { font-family: var(--display); font-weight: 500; font-size: 17px; line-height: 1.1; text-align: center; }
+.dice-mat.n1 .sticker-name { font-size: 26px; }
+.dice-mat.n5 .sticker-name { font-size: 14px; }
+.sticker.stuck .sticker-dot { transform: scale(0.9); }
+.sticker.stuck .sticker-name { opacity: 0.55; }
+.dice-mat.rolling .sticker-dot { animation: dice-wobble 0.18s ease-in-out infinite alternate; }
+.dice-mat.rolling .sticker-name { visibility: hidden; }
+@keyframes dice-wobble { from { transform: rotate(-8deg) scale(0.94); } to { transform: rotate(8deg) scale(1.04); } }
+.dice-tip { text-align: center; margin: 14px 0 0; font-size: 16px; }
+.dice-note { text-align: center; margin: 22px 0 0; font-size: 14px; color: var(--muted); }
+.bar .btn .ico { width: 26px; height: 26px; }

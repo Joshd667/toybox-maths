@@ -18,6 +18,7 @@ import { celebrate, finale, hush } from './reward.js';
 import { reword } from './wording.js';
 import { logo } from './brand.js';
 import { menu, plain } from './ask.js';
+import { STICKER_COLOURS, DICE_LEVELS, stickerColour, rollDice, sayColours } from './stickers.js';
 
 const { render, numeral } = D;
 const view = document.getElementById('view');
@@ -201,11 +202,11 @@ function homeBody() {
       ? `<div class="tiles">${toyTiles().map((t) => {
           const n = forToy(t.id).length;
           return `<a class="tile" href="#/toy/${t.id}"><span class="tile-pic">${pic(toyArt[t.id]())}</span><span class="tile-name">${esc(t.name)}</span><span class="tile-n">${n} ${n === 1 ? 'activity' : 'activities'}</span></a>`;
-        }).join('')}</div>`
+        }).join('')}${stickerTile()}</div>`
       : `<div class="skills">${STRANDS.map((s) => {
           const n = forSkill(s.id).length;
           return `<a class="skill" href="#/skill/${s.id}" style="--c:${s.colour}"><span class="skill-name">${esc(s.name)}</span><span class="skill-blurb">${esc(s.blurb)}</span><span class="skill-n">${n} ${n === 1 ? 'activity' : 'activities'}: ${esc(subSkills(s.id).join(', ').toLowerCase())}</span></a>`;
-        }).join('')}</div>`;
+        }).join('')}${stickerCard()}</div>`;
   return `<div class="seg wide" role="group" aria-label="Browse">
       <button data-act="home-mode" data-v="skill" aria-pressed="${homeMode === 'skill'}">By skill</button>
       <button data-act="home-mode" data-v="toy" aria-pressed="${homeMode === 'toy'}">By toy</button>
@@ -223,6 +224,94 @@ function home() {
     </form>
     <div id="home-body">${homeBody()}</div>
   </section>`;
+}
+
+// ---------------------------------------------------------------- the sticker dice (#/stickers)
+// Not an activity: a button that rolls one, three or five colours for his sticker sheets. No set-up, questions or stars.
+// He sticks them on; a tap on a colour ticks it off, and when every one is ticked his animal dances.
+const dotsPic = (ids, size = 22) => {
+  const gap = size * 0.35;
+  const width = ids.length * size + (ids.length - 1) * gap;
+  return `<svg viewBox="-2 -2 ${width + 4} ${size + 4}" width="${width + 4}" height="${size + 4}" aria-hidden="true">${ids
+    .map((id, i) => `<circle cx="${i * (size + gap) + size / 2}" cy="${size / 2}" r="${size / 2}" fill="${stickerColour(id).hex}" stroke="rgba(0,0,0,.28)" stroke-width="1.5"/>`)
+    .join('')}</svg>`;
+};
+const STICKER_PIC = ['red', 'yellow', 'darkblue'];
+const stickerTile = () =>
+  `<a class="tile" href="#/stickers"><span class="tile-pic">${dotsPic(STICKER_PIC)}</span><span class="tile-name">Stickers</span><span class="tile-n">Colour dice</span></a>`;
+const stickerCard = () =>
+  `<a class="skill sticker-card" href="#/stickers" style="--c:#F28DBB"><span class="sticker-card-pic">${dotsPic(['pink', 'green', 'orange'], 18)}</span><span class="skill-name">Sticker dice</span><span class="skill-blurb">Roll a colour, then he finds that sticker for a dot on his sheet.</span></a>`;
+
+const dice = { roll: [], done: new Set(), rolling: false };
+const diceLevel = () => DICE_LEVELS.find((l) => l.n === store.settings().stickers) || DICE_LEVELS[0];
+let diceRng = makeRng(newSeed());
+
+function diceDots() {
+  const lv = diceLevel();
+  if (!dice.roll.length)
+    return Array.from({ length: lv.n }, () => `<span class="sticker blank" aria-hidden="true"><span class="sticker-dot">?</span><span class="sticker-name">&nbsp;</span></span>`).join('');
+  return dice.roll
+    .map((id) => {
+      const c = stickerColour(id);
+      const on = dice.done.has(id);
+      return `<button class="sticker${on ? ' stuck' : ''}" data-act="stuck" data-v="${id}" aria-pressed="${on}" aria-label="${c.name}${on ? ', stuck down' : ''}">
+        <span class="sticker-dot" style="--s:${c.hex};--t:${c.ink}">${on ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>' : ''}</span>
+        <span class="sticker-name">${esc(c.name)}</span></button>`;
+    })
+    .join('');
+}
+function diceSay() {
+  if (!dice.roll.length) return 'Tap Roll to pick a colour.';
+  if (dice.done.size === dice.roll.length) return 'All stuck down. Roll again!';
+  return `${diceLevel().say} <b>${esc(sayColours(dice.roll))}</b>`;
+}
+function stickerScreen() {
+  const lv = diceLevel();
+  return `${topBar('Sticker dice', '#/')}
+  <section class="page dice-page">
+    <div class="seg wide" role="group" aria-label="How many colours">${DICE_LEVELS.map((l) => `<button data-act="dice-level" data-v="${l.n}" aria-pressed="${l.n === lv.n}">${l.label}</button>`).join('')}</div>
+    <p class="dice-say" id="dice-say" aria-live="polite">${diceSay()}</p>
+    <div class="dice-mat n${lv.n}" id="dice-mat">${diceDots()}</div>
+    <p class="dice-tip">${dice.roll.length ? 'Tap a colour when he has stuck it on.' : `${STICKER_COLOURS.length} colours: ${esc(sayColours(STICKER_COLOURS.map((c) => c.id)))}.`}</p>
+    <p class="dice-note">Just for fun and careful fingers. Unlike the activities, this rests on no study: see About the research.</p>
+  </section>
+  <footer class="bar"><button class="btn primary big" data-act="roll" id="roll">${icon.dice}<span>${dice.roll.length ? 'Roll again' : 'Roll'}</span></button></footer>`;
+}
+const redrawDice = () => {
+  const mat = document.getElementById('dice-mat');
+  if (!mat) return;
+  mat.innerHTML = diceDots();
+  document.getElementById('dice-say').innerHTML = diceSay();
+};
+// A roll: the dots flick through colours for a moment, then settle. Straight to the answer with animation off.
+function rollStickers() {
+  if (dice.rolling) return;
+  const n = diceLevel().n;
+  const final = rollDice(diceRng, n, dice.roll);
+  dice.done = new Set();
+  const still = document.body.classList.contains('calm') || window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const settle = () => {
+    dice.rolling = false;
+    dice.roll = final;
+    if (parts()[0] === 'stickers') draw(true);
+  };
+  if (still) return settle();
+  dice.rolling = true;
+  const mat = document.getElementById('dice-mat');
+  mat.classList.add('rolling');
+  document.getElementById('dice-say').textContent = 'Rolling…';
+  let frame = 0;
+  const tick = () => {
+    if (parts()[0] !== 'stickers') return (dice.rolling = false);
+    if (++frame > 9) return settle();
+    mat.querySelectorAll('.sticker').forEach((st) => st.classList.remove('blank', 'stuck'));
+    mat.querySelectorAll('.sticker-dot').forEach((d) => {
+      d.textContent = '';
+      d.style.setProperty('--s', diceRng.pick(STICKER_COLOURS).hex);
+    });
+    setTimeout(tick, 70 + frame * 12);
+  };
+  tick();
 }
 
 // ---------------------------------------------------------------- a list of activities (one toy, or one skill)
@@ -855,6 +944,7 @@ function screen() {
     const html = list(page, a);
     if (html) return { html, tab: 'home' };
   }
+  if (page === 'stickers') return { html: stickerScreen(), tab: '', playing: true };
   if (page === 'favourites') return { html: favourites(), tab: 'fav' };
   if (page === 'progress') return { html: progress(), tab: 'progress' };
   if (page === 'guide') return { html: guide(), tab: 'settings' };
@@ -925,6 +1015,25 @@ function onTap(el, e) {
     const had = box.value.trim().replace(/[.,;]+$/, '');
     box.value = had ? `${had}. ${v}` : v;
     return onSearch(box);
+  }
+  // ----- the sticker dice
+  if (act === 'dice-level') {
+    if (dice.rolling) return;
+    store.set('stickers', Number(v));
+    dice.roll = [];
+    dice.done = new Set();
+    return draw(true);
+  }
+  if (act === 'roll') return rollStickers();
+  if (act === 'stuck') {
+    if (dice.rolling) return;
+    dice.done.has(v) ? dice.done.delete(v) : dice.done.add(v);
+    redrawDice();
+    if (dice.done.size === dice.roll.length) {
+      celebrate(store.settings().sound, mascot(store.child()));
+      document.querySelector('#roll span').textContent = 'Roll again';
+    }
+    return;
   }
   if (act === 'surprise') {
     const a = store.pick(ACTIVITIES, flow?.a?.id);

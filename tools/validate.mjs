@@ -13,6 +13,7 @@ import { REFS } from '../js/research.js';
 import { makeRng } from '../js/rng.js';
 import { render } from '../js/draw.js';
 import { menu, understand, chipsOf } from '../js/ask.js';
+import { STICKER_COLOURS, DICE_LEVELS, rollDice, sayColours } from '../js/stickers.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const SEEDS = Number(process.argv[2]) || 300;
@@ -142,6 +143,23 @@ for (const s of STRANDS)
   for (const l of [1, 2, 3]) if (!ACTIVITIES.some((a) => a.strand === s.id && levelsOf(a).includes(l))) err(s.id, `no activity at step ${l}`);
 
 // Service worker file list must match the repo.
+// The sticker dice: the right number of different colours each roll, and one colour never the same twice running.
+{
+  const rr = makeRng(7);
+  const known = new Set(STICKER_COLOURS.map((c) => c.id));
+  for (const { n } of DICE_LEVELS) {
+    let last = [];
+    for (let i = 0; i < 500; i++) {
+      const roll = rollDice(rr, n, last);
+      if (roll.length !== n || new Set(roll).size !== n || roll.some((id) => !known.has(id))) err('stickers.js', `a roll of ${n} gave [${roll}]`);
+      if (n === 1 && roll[0] === last[0]) err('stickers.js', 'one colour came up twice running');
+      if (badText(sayColours(roll))) err('stickers.js', `no words for [${roll}]`);
+      last = roll;
+    }
+  }
+  if (sayColours(['red', 'darkblue', 'white']) !== 'red, dark blue and white') err('stickers.js', 'colour names do not read right');
+}
+
 const sw = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
 const listed = new Set([...sw.matchAll(/'\.\/([^']*)'/g)].map((m) => m[1]).filter(Boolean));
 const walk = (dir) => fs.readdirSync(path.join(root, dir), { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(path.join(dir, e.name)) : [path.join(dir, e.name)]));
